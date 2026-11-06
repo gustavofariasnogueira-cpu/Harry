@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duelo de Feitiços - Hogwarts (Online)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=MedievalSharp&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #e8c547;
+            --gold-dim: #c9a227;
+            --gold-glow: rgba(232, 197, 71, 0.55);
+            --blue-magic: #5ce1ff;
+            --red-magic: #ff4d6d;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Cinzel', serif;
+            background: #05050c;
+            color: #e8e6d9;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 120% 80% at 50% -20%, rgba(90, 40, 160, 0.35), transparent 55%),
+                radial-gradient(ellipse 80% 50% at 80% 100%, rgba(20, 60, 120, 0.25), transparent 50%),
+                radial-gradient(ellipse 60% 40% at 10% 80%, rgba(120, 30, 60, 0.18), transparent 45%),
+                #05050c;
+            z-index: -2;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(1.5px 1.5px at 20px 30px, rgba(255,255,255,0.9), transparent),
+                radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1.5px 1.5px at 90px 40px, rgba(255,255,255,0.85), transparent),
+                radial-gradient(1.5px 1.5px at 160px 30px, rgba(255,240,180,0.9), transparent),
+                radial-gradient(1.5px 1.5px at 350px 70px, rgba(255,240,180,0.85), transparent);
+            background-size: 450px 120px;
+            animation: starDrift 80s linear infinite;
+            opacity: 0.55;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes starDrift {
+            from { transform: translateY(0); }
+            to { transform: translateY(-120px); }
+        }
+
+        .magical-title {
+            font-family: 'MedievalSharp', cursive;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: linear-gradient(180deg, #fff8d6 0%, #e8c547 40%, #b8860b 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(232, 197, 71, 0.7), 0 4px 0 #1a1205;
+        }
+
+        .parchment {
+            background: linear-gradient(160deg, rgba(18, 16, 32, 0.97), rgba(8, 8, 18, 0.98));
+            border: 1px solid rgba(232, 197, 71, 0.55);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.75), 0 0 40px rgba(180, 120, 30, 0.15);
+            backdrop-filter: blur(16px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .config-card {
+            background: linear-gradient(145deg, rgba(22, 20, 40, 0.9), rgba(10, 10, 22, 0.95));
+            border: 1px solid rgba(232, 197, 71, 0.25);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 8px 24px rgba(0,0,0,0.35);
+        }
+
+        input, select {
+            background: rgba(12, 12, 24, 0.9) !important;
+            border: 1px solid rgba(232, 197, 71, 0.35) !important;
+            color: #f0e6c8 !important;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--gold) !important;
+            box-shadow: 0 0 0 2px rgba(232, 197, 71, 0.2), 0 0 16px rgba(232, 197, 71, 0.15);
+        }
+
+        .btn-magic {
+            background: linear-gradient(180deg, #e8c547 0%, #c9a227 100%);
+            color: #1a1205;
+            font-weight: 700;
+            border: none;
+            box-shadow: 0 4px 18px rgba(200, 150, 40, 0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+            transition: all 0.22s ease;
+        }
+        .btn-magic:hover:not(:disabled) {
+            filter: brightness(1.12);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(200, 150, 40, 0.5);
+        }
+        .btn-magic:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            filter: grayscale(0.4);
+        }
+
+        .btn-ghost {
+            background: rgba(20, 20, 40, 0.8);
+            color: #c8b890;
+            border: 1px solid rgba(232, 197, 71, 0.3);
+        }
+        .btn-ghost:hover {
+            background: rgba(40, 35, 60, 0.9);
+            border-color: rgba(232, 197, 71, 0.55);
+            color: #f0e6c8;
+        }
+        .btn-ghost.active {
+            background: linear-gradient(180deg, #e8c547 0%, #c9a227 100%);
+            color: #1a1205;
+            border-color: transparent;
+            box-shadow: 0 4px 16px rgba(200, 150, 40, 0.35);
+        }
+
+        .spell-label {
+            background: rgba(14, 14, 28, 0.85);
+            border: 1px solid rgba(100, 90, 60, 0.35);
+            transition: all 0.2s;
+        }
+        .spell-label:hover {
+            background: rgba(28, 26, 48, 0.95);
+            border-color: rgba(232, 197, 71, 0.4);
+        }
+        .spell-label:has(input:checked) {
+            background: rgba(40, 32, 18, 0.9);
+            border-color: rgba(232, 197, 71, 0.7);
+        }
+
+        /* ===== ARENA CINEMATOGRÁFICA ===== */
+        .duel-arena {
+            height: 260px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 18px;
+            margin: 0 0 24px;
+            border: 1px solid rgba(232, 197, 71, 0.45);
+            background:
+                radial-gradient(ellipse 90% 70% at 50% 110%, rgba(70, 30, 140, 0.45), transparent 60%),
+                radial-gradient(ellipse 60% 40% at 50% -10%, rgba(20, 70, 140, 0.35), transparent 50%),
+                linear-gradient(180deg, #070914 0%, #0e0b1a 45%, #05040a 100%);
+            box-shadow: inset 0 0 70px rgba(0,0,0,0.85), 0 15px 45px rgba(0,0,0,0.5);
+        }
+
+        .arena-particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .arena-particles span {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #e8c547;
+            border-radius: 50%;
+            opacity: 0;
+            animation: floatParticle 6s ease-in-out infinite;
+            box-shadow: 0 0 8px #e8c547;
+        }
+        .arena-particles span:nth-child(1) { left: 15%; animation-delay: 0s; }
+        .arena-particles span:nth-child(2) { left: 35%; animation-delay: 1.2s; }
+        .arena-particles span:nth-child(3) { left: 55%; animation-delay: 2.4s; }
+        .arena-particles span:nth-child(4) { left: 75%; animation-delay: 0.8s; }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(110%) scale(0.5); opacity: 0; }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.5; }
+            100% { transform: translateY(-10%) scale(1.3); opacity: 0; }
+        }
+
+        .arena-label {
+            position: absolute;
+            top: 14px;
+            font: 700 10px 'Cinzel', serif;
+            letter-spacing: 0.28em;
+            color: #d4c28a;
+            opacity: 0.8;
+            z-index: 3;
+        }
+        .arena-label.left { left: 20px; }
+        .arena-label.right { right: 20px; }
+
+        .duelist {
+            position: absolute;
+            bottom: 14px;
+            width: 120px;
+            text-align: center;
+            z-index: 3;
+        }
+        .duelist.left { left: 8%; }
+        .duelist.right { right: 8%; }
+
+        .wizard-avatar {
+            margin: auto;
+            width: 76px;
+            height: 130px;
+            position: relative;
+            filter: drop-shadow(0 0 16px rgba(92, 225, 255, 0.45));
+            transition: filter 0.4s ease;
+        }
+        .duelist.right .wizard-avatar {
+            filter: drop-shadow(0 0 16px rgba(255, 77, 109, 0.45));
+        }
+
+        .wizard-avatar .hat-tip {
+            position: absolute; top: 0; left: 22px; width: 32px; height: 38px;
+            background: linear-gradient(135deg, #1e2842, #070913);
+            clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+            border-bottom: 2px solid #e8c547;
+        }
+        .wizard-avatar .hood {
+            position: absolute; top: 32px; left: 18px; width: 40px; height: 32px;
+            border-radius: 50% 50% 30% 30%; background: linear-gradient(135deg, #243054, #0d1222);
+        }
+        .wizard-avatar .robe-body {
+            position: absolute; top: 58px; left: 10px; width: 56px; height: 70px;
+            background: linear-gradient(180deg, #141c33, #080b16);
+            clip-path: polygon(25% 0%, 75% 0%, 100% 100%, 0% 100%);
+            border-bottom: 3px solid #d4af37;
+        }
+        .duelist.right .wizard-avatar .robe-body { background: linear-gradient(180deg, #33141f, #110609); }
+
+        .wizard-avatar .wand-stick {
+            position: absolute; top: 68px; right: -8px; width: 3.5px; height: 54px;
+            background: linear-gradient(180deg, #fff, #e8c547, #5c4015);
+            transform: rotate(-35deg); transform-origin: bottom center; border-radius: 2px;
+        }
+        .duelist.right .wizard-avatar .wand-stick { right: auto; left: -8px; transform: rotate(35deg); }
+
+        .wizard-avatar .wand-sparkle {
+            position: absolute; top: 64px; right: -14px; width: 8px; height: 8px; border-radius: 50%;
+            background: #ffffff; box-shadow: 0 0 12px 3px rgba(255, 255, 255, 0.95), 0 0 24px 8px rgba(92, 225, 255, 0.7);
+            animation: tipPulse 2s ease-in-out infinite;
+        }
+        .duelist.right .wizard-avatar .wand-sparkle { right: auto; left: -14px; box-shadow: 0 0 12px 3px rgba(255, 255, 255, 0.95), 0 0 24px 8px rgba(255, 77, 109, 0.7); }
+
+        @keyframes tipPulse {
+            0%, 100% { transform: scale(0.85); opacity: 0.75; }
+            50% { transform: scale(1.25); opacity: 1; filter: brightness(1.3); }
+        }
+
+        .duelist-name {
+            font: 700 12px 'Cinzel', serif; color: #f0e6c8; margin-top: 6px;
+            text-shadow: 0 0 10px rgba(232, 197, 71, 0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .arena-center {
+            position: absolute; left: 50%; top: 48%; transform: translate(-50%, -50%);
+            width: 56px; height: 56px; border-radius: 50%; z-index: 4;
+            background: radial-gradient(circle, rgba(255,255,255,1), rgba(232,197,71,0.6) 35%, transparent 75%);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .arena-center.active { opacity: 1; animation: clashPulse 0.6s ease-in-out infinite alternate; }
+        @keyframes clashPulse {
+            from { transform: translate(-50%, -50%) scale(0.8); opacity: 0.7; }
+            to { transform: translate(-50%, -50%) scale(1.35); opacity: 1; }
+        }
+
+        .spell-beam {
+            position: absolute; top: 46%; height: 8px; border-radius: 99px; z-index: 5; opacity: 0;
+        }
+        .spell-beam.p1 {
+            left: 14%; width: 36%;
+            background: linear-gradient(90deg, transparent, #5ce1ff 25%, #ffffff 60%, #b8f8ff);
+            box-shadow: 0 0 12px #5ce1ff, 0 0 30px #5ce1ff;
+        }
+        .spell-beam.p2 {
+            right: 14%; width: 36%;
+            background: linear-gradient(270deg, transparent, #ff4d6d 25%, #ffffff 60%, #ffb3c2);
+            box-shadow: 0 0 12px #ff4d6d, 0 0 30px #ff4d6d;
+        }
+        .spell-beam.fire-p1 { animation: beamFromLeft 0.75s cubic-bezier(0.1, 0.8, 0.2, 1) forwards; }
+        .spell-beam.fire-p2 { animation: beamFromRight 0.75s cubic-bezier(0.1, 0.8, 0.2, 1) forwards; }
+
+        @keyframes beamFromLeft {
+            0% { opacity: 0; transform: scaleX(0.05); transform-origin: left center; }
+            20% { opacity: 1; }
+            100% { opacity: 1; transform: scaleX(1); transform-origin: left center; }
+        }
+        @keyframes beamFromRight {
+            0% { opacity: 0; transform: scaleX(0.05); transform-origin: right center; }
+            20% { opacity: 1; }
+            100% { opacity: 1; transform: scaleX(1); transform-origin: right center; }
+        }
+
+        .spell-spark {
+            position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #fff; z-index: 6; pointer-events: none; opacity: 0;
+        }
+        .spell-spark.p1 { color: #5ce1ff; }
+        .spell-spark.p2 { color: #ff4d6d; }
+
+        .clash-flash {
+            position: absolute; left: 50%; top: 46%; width: 30px; height: 30px; transform: translate(-50%, -50%);
+            border-radius: 50%; z-index: 7; background: #fff; opacity: 0;
+            box-shadow: 0 0 30px 15px #fff, 0 0 70px 30px #e8c547;
+        }
+        .clash-flash.burst { animation: clashBurst 0.65s ease-out forwards; }
+        @keyframes clashBurst {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.1); }
+            25% { opacity: 1; transform: translate(-50%, -50%) scale(2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(7); }
+        }
+
+        .shockwave {
+            position: absolute; left: 50%; top: 46%; width: 20px; height: 20px; transform: translate(-50%, -50%);
+            border-radius: 50%; border: 3px solid rgba(255, 245, 200, 0.9); z-index: 6; opacity: 0; pointer-events: none;
+        }
+        .shockwave.burst { animation: shockExpand 0.7s ease-out forwards; }
+        @keyframes shockExpand {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.2); border-width: 4px; }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(9); border-width: 1px; }
+        }
+
+        .hp-bar-container {
+            background: rgba(6, 6, 14, 0.95); border: 1px solid rgba(120, 100, 60, 0.45); overflow: hidden; position: relative;
+        }
+        .hp-bar { height: 100%; transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; }
+        .hp-bar.p1 { background: linear-gradient(90deg, #1a7abf, #3db8e8, #7ee8ff); }
+        .hp-bar.p2 { background: linear-gradient(90deg, #b81a3d, #e83d6a, #ff7a9a); }
+
+        #combat-log {
+            background: rgba(6, 6, 14, 0.94); border: 1px solid rgba(180, 150, 70, 0.3); font-family: 'Orbitron', monospace;
+        }
+        .arena-shake { animation: arenaShake 0.4s ease-out; }
+        @keyframes arenaShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-7px); }
+            40% { transform: translateX(7px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(3px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 py-8">
+
+    <header class="text-center mb-8 relative z-10">
+        <h1 class="text-4xl md:text-5xl magical-title mb-2">Duelo de Feitiços</h1>
+        <p class="text-sm text-amber-200/70 tracking-widest uppercase">Hogwarts • Multiplayer Online</p>
+    </header>
+
+    <!-- TELA 0: LOBBY ONLINE / CRIAR OU ENTRAR EM SALA -->
+    <div id="lobby-screen" class="w-full max-w-md parchment rounded-2xl p-6 md:p-8 shadow-2xl relative z-10 text-center">
+        <h2 class="text-2xl font-bold text-amber-300 mb-5 border-b border-amber-500/25 pb-3">Duelo Online</h2>
+        
+        <div class="mb-4 text-left">
+            <label class="block text-xs text-slate-400 mb-1">Seu Nome de Bruxo</label>
+            <input type="text" id="online-name-input" value="Guh" class="w-full rounded-lg p-2.5 mb-3">
+        </div>
+
+        <button onclick="createRoom()" class="btn-magic w-full py-3 rounded-xl mb-4 tracking-wide">Criar Nova Sala de Duelo</button>
+        
+        <div class="relative flex py-2 items-center">
+            <div class="flex-grow border-t border-amber-500/20"></div>
+            <span class="flex-shrink mx-4 text-xs text-slate-400 uppercase tracking-widest">ou entrar</span>
+            <div class="flex-grow border-t border-amber-500/20"></div>
+        </div>
+
+        <div class="mt-4 text-left">
+            <label class="block text-xs text-slate-400 mb-1">Código da Sala</label>
+            <input type="text" id="room-code-input" placeholder="Ex: HOG-1234" class="w-full rounded-lg p-2.5 mb-3 text-center uppercase tracking-widest font-bold">
+        </div>
+        <button onclick="joinRoom()" class="btn-ghost w-full py-3 rounded-xl tracking-wide">Entrar na Sala</button>
+    </div>
+
+    <!-- TELA 1: CONFIGURAÇÃO DE GRIMÓRIO -->
+    <div id="setup-screen" class="w-full max-w-4xl parchment rounded-2xl p-6 md:p-8 shadow-2xl relative z-10 hidden">
+        <h2 id="room-status-title" class="text-2xl font-bold text-amber-300 mb-2 border-b border-amber-500/25 pb-3 tracking-wide">Preparação do Duelo</h2>
+        <p id="room-code-display" class="text-xs text-sky-300 mb-5 font-bold tracking-widest"></p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+            <div class="config-card p-4 rounded-xl">
+                <h3 class="text-lg font-bold text-sky-400 mb-3">Seu Grimório</h3>
+                <div class="flex gap-4 text-sm mt-2">
+                    <div class="text-amber-400/90">Ataques: <span id="p1-atk-count" class="font-bold text-amber-300">0</span>/10</div>
+                    <div class="text-sky-400/90">Defesas: <span id="p1-def-count" class="font-bold text-sky-300">0</span>/3</div>
+                </div>
+            </div>
+
+            <div class="config-card p-4 rounded-xl">
+                <h3 id="opponent-status-text" class="text-lg font-bold text-rose-400 mb-3">Aguardando oponente...</h3>
+                <p id="opponent-name-status" class="text-xs text-slate-400">Compartilhe o código da sala com seu amigo.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-amber-500/15 pt-5">
+            <div>
+                <h4 class="font-bold text-amber-200 mb-3 tracking-wide text-sm">Selecione 10 Ataques</h4>
+                <div id="attacks-selection" class="space-y-1.5 max-h-64 overflow-y-auto pr-1.5"></div>
+            </div>
+            <div>
+                <h4 class="font-bold text-sky-200 mb-3 tracking-wide text-sm">Selecione 3 Defesas</h4>
+                <div id="defenses-selection" class="space-y-1.5 max-h-64 overflow-y-auto pr-1.5"></div>
+            </div>
+        </div>
+
+        <button onclick="readyToDuel()" id="ready-btn" class="btn-magic w-full mt-7 py-3.5 rounded-xl text-lg tracking-wide" disabled>
+            Pronto para o Duelo!
+        </button>
+    </div>
+
+    <!-- TELA 2: O DUELO -->
+    <div id="duel-screen" class="w-full max-w-4xl parchment rounded-2xl p-6 md:p-8 shadow-2xl hidden relative z-10">
+        <div class="grid grid-cols-2 gap-4 mb-5">
+            <div class="config-card p-4 rounded-xl border-sky-500/30">
+                <div class="flex justify-between items-center mb-1.5">
+                    <span id="p1-name-display" class="font-bold text-sky-300 tracking-wide">Jogador 1</span>
+                </div>
+                <div class="text-xs text-slate-400 mb-1.5">HP: <span id="p1-hp-text" class="text-sky-300 font-semibold">100</span>/100</div>
+                <div class="w-full hp-bar-container h-3.5 rounded-full">
+                    <div id="p1-hp-bar" class="hp-bar p1 h-full rounded-full" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <div class="config-card p-4 rounded-xl border-rose-500/30">
+                <div class="flex justify-between items-center mb-1.5">
+                    <span id="p2-name-display" class="font-bold text-rose-300 tracking-wide">Jogador 2</span>
+                </div>
+                <div class="text-xs text-slate-400 mb-1.5">HP: <span id="p2-hp-text" class="text-rose-300 font-semibold">100</span>/100</div>
+                <div class="w-full hp-bar-container h-3.5 rounded-full">
+                    <div id="p2-hp-bar" class="hp-bar p2 h-full rounded-full" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="duel-arena" class="duel-arena">
+            <div class="arena-particles"><span></span><span></span><span></span><span></span></div>
+            <span class="arena-label left">JOGADOR 1</span>
+            <span class="arena-label right">JOGADOR 2</span>
+            
+            <div class="duelist left">
+                <div class="wizard-avatar">
+                    <div class="hat-tip"></div><div class="hood"></div><div class="robe-body"></div><div class="wand-stick"></div><div class="wand-sparkle"></div>
+                </div>
+                <div id="arena-p1-name" class="duelist-name">Guh</div>
+            </div>
+
+            <div class="duelist right">
+                <div class="wizard-avatar">
+                    <div class="hat-tip"></div><div class="hood"></div><div class="robe-body"></div><div class="wand-stick"></div><div class="wand-sparkle"></div>
+                </div>
+                <div id="arena-p2-name" class="duelist-name">Adversário</div>
+            </div>
+
+            <div id="arena-center" class="arena-center"></div>
+            <div id="arena-flash" class="clash-flash"></div>
+            <div id="arena-shock" class="shockwave"></div>
+        </div>
+
+        <div id="action-panel" class="config-card p-5 rounded-xl mb-5 text-center">
+            <h3 id="current-player-turn" class="text-xl font-bold text-amber-300 mb-2 tracking-wide">Sua Vez (Escolha secreta)</h3>
+            
+            <div class="flex justify-center gap-3 mb-4">
+                <button onclick="setPlayerActionType('attack')" id="btn-type-atk" class="btn-ghost active px-6 py-2.5 rounded-lg font-bold">Atacar</button>
+                <button onclick="setPlayerActionType('defense')" id="btn-type-def" class="btn-ghost px-6 py-2.5 rounded-lg font-bold">Defender</button>
+            </div>
+
+            <div id="spell-selection-container" class="mb-4">
+                <select id="active-spell-select" class="w-full max-w-md mx-auto rounded-lg p-2.5 text-amber-100"></select>
+            </div>
+
+            <button id="confirm-action-btn" onclick="confirmOnlineAction()" class="btn-magic px-10 py-2.5 rounded-lg shadow-lg tracking-wide">
+                Confirmar Ação (Secreto)
+            </button>
+        </div>
+
+        <div class="p-4 rounded-xl h-52 overflow-y-auto text-xs space-y-2.5" id="combat-log">
+            <div class="text-amber-400/70">[Sistema] Conectado à sala de duelo online.</div>
+        </div>
+    </div>
+
+    <script src="spells.js"></script>
+    <script>
+        // CONFIGURAÇÃO DO FIREBASE (Banco público padrão para testes em tempo real)
+        const firebaseConfig = {
+            databaseURL: "https://duelo-hogwarts-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let myRole = null; // 'p1' ou 'p2'
+        let roomCode = null;
+        let myName = "Guh";
+        let selectedActionType = 'attack';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            populateGrimoires();
+        });
+
+        function populateGrimoires() {
+            const atkContainer = document.getElementById('attacks-selection');
+            const defContainer = document.getElementById('defenses-selection');
+
+            ATTACK_SPELLS.forEach((sp, idx) => {
+                atkContainer.innerHTML += `
+                    <label class="spell-label flex items-center justify-between p-2.5 rounded-lg text-xs cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" value="${idx}" class="p1-atk-chk accent-amber-500" onchange="checkGrimoireCount()">
+                            <span class="text-amber-100 font-semibold">${sp.name}</span>
+                            <span class="text-[10px] text-slate-500">(Nv.${sp.level})</span>
+                        </div>
+                    </label>`;
+            });
+
+            DEFENSE_SPELLS.forEach((sp, idx) => {
+                defContainer.innerHTML += `
+                    <label class="spell-label flex items-center justify-between p-2.5 rounded-lg text-xs cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" value="${idx}" class="p1-def-chk accent-sky-500" onchange="checkGrimoireCount()">
+                            <span class="text-sky-100 font-semibold">${sp.name}</span>
+                            <span class="text-[10px] text-slate-500">(Nv.${sp.level})</span>
+                        </div>
+                    </label>`;
+            });
+        }
+
+        function checkGrimoireCount() {
+            const atkCount = document.querySelectorAll('.p1-atk-chk:checked').length;
+            const defCount = document.querySelectorAll('.p1-def-chk:checked').length;
+            document.getElementById('p1-atk-count').innerText = atkCount;
+            document.getElementById('p1-def-count').innerText = defCount;
+
+            document.getElementById('ready-btn').disabled = (atkCount !== 10 || defCount !== 3);
+        }
+
+        function createRoom() {
+            myName = document.getElementById('online-name-input').value || "Guh";
+            roomCode = 'HOG-' + Math.floor(1000 + Math.random() * 9000);
+            myRole = 'p1';
+
+            db.ref('rooms/' + roomCode).set({
+                p1: { name: myName, hp: 100, ready: false },
+                p2: { name: "Aguardando...", hp: 100, ready: false },
+                status: 'waiting'
+            });
+
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('room-code-display').innerText = `CÓDIGO DA SALA: ${roomCode} (Passe para seu amigo)`;
+            
+            listenRoomState();
+        }
+
+        function joinRoom() {
+            myName = document.getElementById('online-name-input').value || "Adversário";
+            roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+            myRole = 'p2';
+
+            if (!roomCode) {
+                alert('Digite o código da sala!');
+                return;
+            }
+
+            db.ref('rooms/' + roomCode).once('snapshot', (snapshot) => {
+                // Compatibilidade com v9 compat
+            });
+            db.ref('rooms/' + roomCode).get().then((snapshot) => {
+                if (snapshot.exists()) {
+                    db.ref('rooms/' + roomCode + '/p2').update({ name: myName, hp: 100, ready: false });
+                    document.getElementById('lobby-screen').classList.add('hidden');
+                    document.getElementById('setup-screen').classList.remove('hidden');
+                    document.getElementById('room-code-display').innerText = `CONECTADO NA SALA: ${roomCode}`;
+                    listenRoomState();
+                } else {
+                    alert('Sala não encontrada!');
+                }
+            });
+        }
+
+        function listenRoomState() {
+            db.ref('rooms/' + roomCode).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                if (myRole === 'p1' && data.p2 && data.p2.name !== "Aguardando...") {
+                    document.getElementById('opponent-status-text').innerText = "Oponente Conectado!";
+                    document.getElementById('opponent-name-status').innerText = data.p2.name;
+                }
+                if (myRole === 'p2' && data.p1) {
+                    document.getElementById('opponent-status-text').innerText = "Oponente Conectado!";
+                    document.getElementById('opponent-name-status').innerText = data.p1.name;
+                }
+
+                if (data.status === 'playing' && document.getElementById('setup-screen').classList.contains('hidden') === false) {
+                    document.getElementById('setup-screen').classList.add('hidden');
+                    document.getElementById('duel-screen').classList.remove('hidden');
+                    
+                    document.getElementById('p1-name-display').innerText = data.p1.name;
+                    document.getElementById('arena-p1-name').innerText = data.p1.name;
+                    document.getElementById('p2-name-display').innerText = data.p2.name;
+                    document.getElementById('arena-p2-name').innerText = data.p2.name;
+                }
+            });
+        }
+
+        function readyToDuel() {
+            const atkIndices = Array.from(document.querySelectorAll('.p1-atk-chk:checked')).map(el => parseInt(el.value));
+            const defIndices = Array.from(document.querySelectorAll('.p1-def-chk:checked')).map(el => parseInt(el.value));
+            
+            const myAttacks = atkIndices.map(i => ATTACK_SPELLS[i]);
+            const myDefenses = defIndices.map(i => DEFENSE_SPELLS[i]);
+
+            window.mySpells = { attacks: myAttacks, defenses: myDefenses };
+
+            db.ref('rooms/' + roomCode + '/' + myRole).update({
+                ready: true,
+                attacks: myAttacks,
+                defenses: myDefenses
+            });
+
+            document.getElementById('ready-btn').innerText = "Aguardando oponente ficar pronto...";
+            document.getElementById('ready-btn').disabled = true;
+
+            // Verifica se ambos estão prontos para iniciar o jogo
+            db.ref('rooms/' + roomCode).once('value', (snap) => {
+                const val = snap.val();
+                if (val.p1.ready && val.p2.ready) {
+                    db.ref('rooms/' + roomCode).update({ status: 'playing' });
+                }
+            });
+            db.ref('rooms/' + roomCode + '/status').on('value', (snap) => {
+                if (snap.val() === 'playing') {
+                    document.getElementById('setup-screen').classList.add('hidden');
+                    document.getElementById('duel-screen').classList.remove('hidden');
+                    setupActiveSpellSelect();
+                }
+            });
+        }
+
+        function setupActiveSpellSelect() {
+            setPlayerActionType('attack');
+        }
+
+        function setPlayerActionType(type) {
+            selectedActionType = type;
+            const btnAtk = document.getElementById('btn-type-atk');
+            const btnDef = document.getElementById('btn-type-def');
+            const select = document.getElementById('active-spell-select');
+            select.innerHTML = '';
+
+            const spells = (type === 'attack') ? window.mySpells.attacks : window.mySpells.defenses;
+
+            if (type === 'attack') {
+                btnAtk.classList.add('active'); btnDef.classList.remove('active');
+            } else {
+                btnDef.classList.add('active'); btnAtk.classList.remove('active');
+            }
+
+            spells.forEach((sp, idx) => {
+                select.innerHTML += `<option value="${idx}">${sp.name} (Nv.${sp.level})</option>`;
+            });
+        }
+
+        function confirmOnlineAction() {
+            const selectElement = document.getElementById('active-spell-select');
+            const idx = selectElement.selectedIndex;
+            if (idx === -1) return;
+
+            const spell = (selectedActionType === 'attack') ? window.mySpells.attacks[idx] : window.mySpells.defenses[idx];
+            const actionData = { type: selectedActionType, spell: spell };
+
+            // Envia ação para o Firebase de forma secreta
+            db.ref('rooms/' + roomCode + '/actions/' + myRole).set(actionData);
+
+            document.getElementById('confirm-action-btn').disabled = true;
+            document.getElementById('confirm-action-btn').innerText = "Aguardando oponente...";
+            document.getElementById('current-player-turn').innerText = "Ação enviada! Aguardando oponente...";
+
+            // Ouve as ações de ambos
+            db.ref('rooms/' + roomCode + '/actions').on('value', (snapshot) => {
+                const actions = snapshot.val();
+                if (actions && actions.p1 && actions.p2) {
+                    // Desliga o listener temporariamente para evitar loops
+                    db.ref('rooms/' + roomCode + '/actions').off();
+                    
+                    // Executa animação e resolução nas duas telas simultaneamente
+                    resolveOnlineRound(actions.p1, actions.p2);
+                }
+            });
+        }
+
+        function resolveOnlineRound(a1, a2) {
+            fireDuelSpells(a1, a2);
+
+            setTimeout(() => {
+                db.ref('rooms/' + roomCode).once('value', (snap) => {
+                    const data = snap.val();
+                    let p1Hp = data.p1.hp;
+                    let p2Hp = data.p2.hp;
+
+                    let logHtml = `<div class="border-b border-amber-900/30 pb-2 mb-2"><div class="text-amber-300 font-bold">── Rodada ──</div>`;
+                    logHtml += `<div>${data.p1.name}: ${a1.spell.name} (${a1.type})</div>`;
+                    logHtml += `<div>${data.p2.name}: ${a2.spell.name} (${a2.type})</div>`;
+
+                    if (a1.type === 'attack' && a2.type === 'attack') {
+                        if (a1.spell.level === a2.spell.level) {
+                            logHtml += `<div class="text-purple-400">⚡ Níveis iguais! Priori Incantatem!</div></div>`;
+                        } else if (a1.spell.level > a2.spell.level) {
+                            const dmg = a1.spell.level * 5;
+                            p2Hp = Math.max(0, p2Hp - dmg);
+                            logHtml += `<div class="text-sky-400">⚔️ Ataque de ${data.p1.name} causou ${dmg} de dano!</div></div>`;
+                        } else {
+                            const dmg = a2.spell.level * 5;
+                            p1Hp = Math.max(0, p1Hp - dmg);
+                            logHtml += `<div class="text-rose-400">⚔️ Ataque de ${data.p2.name} causou ${dmg} de dano!</div></div>`;
+                        }
+                    } else if (a1.type === 'attack' && a2.type === 'defense') {
+                        if (a2.spell.isStatue || a2.spell.level >= a1.spell.level) {
+                            logHtml += `<div class="text-sky-300">🛡️ ${data.p2.name} bloqueou totalmente o ataque!</div></div>`;
+                        } else {
+                            const res = (a1.spell.level - a2.spell.level) * 3;
+                            p2Hp = Math.max(0, p2Hp - res);
+                            logHtml += `<div class="text-amber-400">⚠️ Dano residual de ${res} em ${data.p2.name}!</div></div>`;
+                        }
+                    } else if (a1.type === 'defense' && a2.type === 'attack') {
+                        if (a1.spell.isStatue || a1.spell.level >= a2.spell.level) {
+                            logHtml += `<div class="text-sky-300">🛡️ ${data.p1.name} bloqueou totalmente o ataque!</div></div>`;
+                        } else {
+                            const res = (a2.spell.level - a1.spell.level) * 3;
+                            p1Hp = Math.max(0, p1Hp - res);
+                            logHtml += `<div class="text-amber-400">⚠️ Dano residual de ${res} em ${data.p1.name}!</div></div>`;
+                        }
+                    } else {
+                        logHtml += `<div class="text-slate-400">🛡️ Ambos se defenderam.</div></div>`;
+                    }
+
+                    // Atualiza HP no Firebase (apenas p1 atualiza para evitar conflito duplo)
+                    if (myRole === 'p1') {
+                        db.ref('rooms/' + roomCode + '/p1').update({ hp: p1Hp });
+                        db.ref('rooms/' + roomCode + '/p2').update({ hp: p2Hp });
+                        db.ref('rooms/' + roomCode + '/actions').remove(); // Limpa para a próxima rodada
+                    }
+
+                    document.getElementById('combat-log').innerHTML = logHtml + document.getElementById('combat-log').innerHTML;
+                });
+            }, 800);
+
+            // Ouve atualização de HP constante
+            db.ref('rooms/' + roomCode).on('value', (snap) => {
+                const data = snap.val();
+                if (!data) return;
+                document.getElementById('p1-hp-text').innerText = data.p1.hp;
+                document.getElementById('p1-hp-bar').style.width = data.p1.hp + '%';
+                document.getElementById('p2-hp-text').innerText = data.p2.hp;
+                document.getElementById('p2-hp-bar').style.width = data.p2.hp + '%';
+
+                if (data.p1.hp <= 0 || data.p2.hp <= 0) {
+                    alert(data.p1.hp <= 0 ? `${data.p2.name} venceu o duelo!` : `${data.p1.name} venceu o duelo!`);
+                    location.reload();
+                } else {
+                    document.getElementById('confirm-action-btn').disabled = false;
+                    document.getElementById('confirm-action-btn').innerText = "Confirmar Ação (Secreto)";
+                    document.getElementById('current-player-turn').innerText = "Sua Vez (Escolha secreta)";
+                }
+            });
+        }
+
+        function fireDuelSpells(a1, a2) {
+            const arena = document.getElementById('duel-arena');
+            if (!arena) return;
+            arena.querySelectorAll('.spell-beam, .spell-spark').forEach(node => node.remove());
+
+            const center = document.getElementById('arena-center');
+            const flash = document.getElementById('arena-flash');
+            const shock = document.getElementById('arena-shock');
+            center.classList.add('active');
+
+            if (a1.type === 'attack') {
+                const beam = document.createElement('div');
+                beam.className = 'spell-beam p1 fire-p1';
+                arena.appendChild(beam);
+            }
+            if (a2.type === 'attack') {
+                const beam = document.createElement('div');
+                beam.className = 'spell-beam p2 fire-p2';
+                arena.appendChild(beam);
+            }
+
+            setTimeout(() => {
+                flash.classList.add('burst');
+                shock.classList.add('burst');
+                arena.classList.add('arena-shake');
+                setTimeout(() => arena.classList.remove('arena-shake'), 400);
+            }, 500);
+
+            setTimeout(() => {
+                center.classList.remove('active');
+                arena.querySelectorAll('.spell-beam, .spell-spark').forEach(node => node.remove());
+                flash.classList.remove('burst');
+                shock.classList.remove('burst');
+            }, 1200);
+        }
+    </script>
+</body>
+</html>
