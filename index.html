@@ -378,6 +378,11 @@
                     document.getElementById('start-btn').disabled = false;
                     document.getElementById('start-btn').innerText = "Entrar no Duelo";
                 }
+                const syncedRound = Number(data.round) || 0;
+                if (gameState.mode === 'online' && syncedRound > gameState.onlineRoundNumber && !document.getElementById('duel-screen').classList.contains('hidden')) {
+                    gameState.onlineRoundNumber = syncedRound;
+                    prepareTurnInput();
+                }
                 if (data.status === 'finished' && data.result) {
                     gameState.p1.hp = data.result.loserKey === 'p1' ? 0 : 100;
                     gameState.p2.hp = data.result.loserKey === 'p2' ? 0 : 100;
@@ -436,6 +441,9 @@
                 gameState.p2.house = HOUSES.find(h => h.id === p2HouseId);
                 gameState.p2.attacks = [...gameState.p1.attacks];
                 gameState.p2.defenses = [...gameState.p1.defenses];
+            }
+            if (gameState.mode === 'online') {
+                db.ref('rooms/' + gameState.roomCode).update({ status: 'playing' });
             }
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('duel-screen').classList.remove('hidden');
@@ -517,7 +525,7 @@
                 const incomingRound = Number(data.round) || 0;
                 if (incomingRound > gameState.onlineRoundNumber) {
                     gameState.onlineRoundNumber = incomingRound;
-                    if (awaitingNextOnlineRound) prepareTurnInput();
+                    prepareTurnInput();
                 }
                 const act1 = data.actionP1;
                 const act2 = data.actionP2;
@@ -525,8 +533,6 @@
                     gameState.p1Action = gameState.isHost ? act1 : act2;
                     gameState.p2Action = gameState.isHost ? act2 : act1;
                     resolveRoundWithAnimation();
-                } else if (awaitingNextOnlineRound && !act1 && !act2) {
-                    prepareTurnInput();
                 }
                 if (data.status === 'finished' && data.result) {
                     showGameOver(data.result.winnerName, data.result.loserName);
@@ -637,9 +643,6 @@
             }
         }
         function advanceOnlineRound() {
-            awaitingNextOnlineRound = true;
-            document.getElementById('btn-confirm-action').disabled = true;
-            document.getElementById('turn-subtitle').innerText = 'Aguardando a próxima rodada...';
             if (gameState.isHost) {
                 const nextRound = gameState.onlineRoundNumber + 1;
                 db.ref(`rooms/${gameState.roomCode}`).update({ round: nextRound, actionP1: null, actionP2: null });
@@ -670,10 +673,7 @@
                 return;
             }
             if (gameState.mode === 'online') {
-                if (gameState.isHost) {
-                    const nextRound = gameState.onlineRoundNumber + 1;
-                    db.ref('rooms/' + gameState.roomCode).update({ round: nextRound, actionP1: null, actionP2: null });
-                }
+                advanceOnlineRound();
                 return;
             }
             prepareTurnInput();
