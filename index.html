@@ -1057,27 +1057,63 @@
             const a2 = gameState.p2Action;
             const log = document.getElementById('combat-log');
 
-            // ── REGRA DE COOLDOWN E CONSECUTIVOS (Estátua / Avada Kedavra) ──
-            const spellNameA1 = a1.spellName || (a1.spell ? a1.spell.name : '');
-            const isStatueA1 = a1.isStatue || (a1.spell ? a1.spell.isStatue : false);
+            // Extração segura do nome e nível, seja feitiço de ataque ou defesa
+            const name1 = a1.spell ? a1.spell.name : (a1.spellName || '');
+            const name2 = a2.spell ? a2.spell.name : (a2.spellName || '');
 
-            if (isStatueA1 || spellNameA1 === "Avada Kedavra") {
-                if (p1.lastSpellUsed === spellNameA1) {
+            // Regra de cooldown do Jogador 1 (Estátua ou Avada)
+            const isStatueA1 = a1.spell ? a1.spell.isStatue : (a1.isStatue || false);
+            if (isStatueA1 || name1 === "Avada Kedavra") {
+                if (p1.lastSpellUsed === name1) {
                     p1.consecutiveCount++;
                     if (p1.consecutiveCount >= 2) {
-                        p1.cooldownTurns = 2; // Entra em exaustão por 2 rodadas
+                        p1.cooldownTurns = 2;
                         p1.consecutiveCount = 0;
                     }
                 } else {
-                    p1.lastSpellUsed = spellNameA1;
+                    p1.lastSpellUsed = name1;
                     p1.consecutiveCount = 1;
                 }
             } else {
                 p1.consecutiveCount = 0;
             }
-            if (p1.cooldownTurns > 0) {
-                p1.cooldownTurns--;
+            if (p1.cooldownTurns > 0) p1.cooldownTurns--;
+
+            let narrative = `<div class="border-b border-amber-900/30 pb-2.5 mb-2.5"><div class="text-amber-300 font-bold mb-1.5 tracking-wide">── Resolução da Rodada ──</div>`;
+            narrative += `<div>🧙‍♂️ <strong class="text-sky-300">${p1.name}</strong> conjurou: <span class="text-amber-200">${name1}</span></div>`;
+            narrative += `<div>🧙‍♂️ <strong class="text-rose-300">${p2.name}</strong> conjurou: <span class="text-amber-200">${name2}</span></div>`;
+
+            if (a1.type === 'attack' && a2.type === 'attack') {
+                const lvl1 = a1.spell ? a1.spell.level : a1.level;
+                const lvl2 = a2.spell ? a2.spell.level : a2.level;
+
+                if (lvl1 === lvl2) {
+                    narrative += `<div class="text-purple-400 font-bold mt-1.5">⚡ Choque de feitiços de mesmo nível! Priori Incantatem ativado!</div></div>`;
+                    log.innerHTML = narrative + log.innerHTML;
+                    startEmbate(a1.spell || a1);
+                    return;
+                } else if (lvl1 > lvl2) {
+                    const dmg = applyDamageDirect('p2', lvl1 * 5);
+                    narrative += `<div class="text-sky-400 mt-1.5">⚔️ O ataque de ${p1.name} superou o de ${p2.name}, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
+                } else {
+                    const dmg = applyDamageDirect('p1', lvl2 * 5);
+                    narrative += `<div class="text-rose-400 mt-1.5">⚔️ O ataque de ${p2.name} superou o de ${p1.name}, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
+                }
+            } else if (a1.type === 'attack' && a2.type === 'defense') {
+                const atkSpell = a1.spell || a1;
+                const defSpell = a2.spell || a2;
+                narrative += resolveDetailedAttackDefense(p1, p2, atkSpell, defSpell, 'p2');
+            } else if (a1.type === 'defense' && a2.type === 'attack') {
+                const defSpell = a1.spell || a1;
+                const atkSpell = a2.spell || a2;
+                narrative += resolveDetailedAttackDefense(p2, p1, atkSpell, defSpell, 'p1');
+            } else {
+                narrative += `<div class="text-slate-400 mt-1.5">🛡️ Ambos adotaram posturas defensivas.</div></div>`;
             }
+
+            log.innerHTML = narrative + log.innerHTML;
+            checkGameOver();
+        }
             // ─────────────────────────────────────────────────────────────
 
             let narrative = `<div class="border-b border-amber-900/30 pb-2.5 mb-2.5"><div class="text-amber-300 font-bold mb-1.5 tracking-wide">── Resolução da Rodada ──</div>`;
