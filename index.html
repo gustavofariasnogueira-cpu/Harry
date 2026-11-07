@@ -667,13 +667,18 @@
             mode: 'online',
             roomCode: null,
             isHost: false,
-            p1: { name: "Guh", house: null, hp: 100, attacks: [], defenses: [] },
-            p2: { name: "Adversário", house: null, hp: 100, attacks: [], defenses: [] },
+            p1: { 
+                name: "Guh", house: null, hp: 100, attacks: [], defenses: [],
+                lastSpellUsed: null, consecutiveCount: 0, cooldownTurns: 0 
+            },
+            p2: { 
+                name: "Adversário", house: null, hp: 100, attacks: [], defenses: [],
+                lastSpellUsed: null, consecutiveCount: 0, cooldownTurns: 0 
+            },
             p1Action: null,
             p2Action: null,
             embateState: { active: false, spell: null, number: 0, energy: 1 }
         };
-
         window.addEventListener('DOMContentLoaded', () => {
             populateHouses();
             populateGrimoires();
@@ -923,7 +928,16 @@
             const spellList = selectedActionType === 'attack' ? gameState.p1.attacks : gameState.p1.defenses;
             const spell = spellList[realIdx];
 
-            const actionData = { type: selectedActionType, spellIndex: realIdx, spellName: spell.name, level: spell.level, isCurse: spell.isCurse || false, isStatue: spell.isStatue || false };
+            // Verifica se o jogador está em cooldown para este feitiço especial (ex: Estátua ou Avada)
+            if (gameState.p1.cooldownTurns > 0 && (spell.isStatue || spell.name === "Avada Kedavra")) {
+                alert(`Este feitiço poderoso está em exaustão! Aguarde mais ${gameState.p1.cooldownTurns} rodada(s) para reutilizá-lo.`);
+                return;
+            }
+
+            const actionData = { 
+                type: selectedActionType, 
+                spell: spell 
+            };
 
             document.getElementById('btn-confirm-action').disabled = true;
             document.getElementById('turn-subtitle').innerText = "Aguardando oponente confirmar ação...";
@@ -1043,8 +1057,31 @@
             const a2 = gameState.p2Action;
             const log = document.getElementById('combat-log');
 
+            // ── REGRA DE COOLDOWN E CONSECUTIVOS (Estátua / Avada Kedavra) ──
+            const spellNameA1 = a1.spellName || (a1.spell ? a1.spell.name : '');
+            const isStatueA1 = a1.isStatue || (a1.spell ? a1.spell.isStatue : false);
+
+            if (isStatueA1 || spellNameA1 === "Avada Kedavra") {
+                if (p1.lastSpellUsed === spellNameA1) {
+                    p1.consecutiveCount++;
+                    if (p1.consecutiveCount >= 2) {
+                        p1.cooldownTurns = 2; // Entra em exaustão por 2 rodadas
+                        p1.consecutiveCount = 0;
+                    }
+                } else {
+                    p1.lastSpellUsed = spellNameA1;
+                    p1.consecutiveCount = 1;
+                }
+            } else {
+                p1.consecutiveCount = 0;
+            }
+            if (p1.cooldownTurns > 0) {
+                p1.cooldownTurns--;
+            }
+            // ─────────────────────────────────────────────────────────────
+
             let narrative = `<div class="border-b border-amber-900/30 pb-2.5 mb-2.5"><div class="text-amber-300 font-bold mb-1.5 tracking-wide">── Resolução da Rodada ──</div>`;
-            narrative += `<div>🧙‍♂️ <strong class="text-sky-300">${p1.name}</strong> conjurou: <span class="text-amber-200">${a1.spellName}</span></div>`;
+            narrative += `<div>🧙‍♂️ <strong class="text-sky-300">${p1.name}</strong> conjurou: <span class="text-amber-200">${spellNameA1}</span></div>`;
             narrative += `<div>🧙‍♂️ <strong class="text-rose-300">${p2.name}</strong> conjurou: <span class="text-amber-200">${a2.spellName}</span></div>`;
 
             if (a1.type === 'attack' && a2.type === 'attack') {
