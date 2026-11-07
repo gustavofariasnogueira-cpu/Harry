@@ -1057,11 +1057,9 @@
             const a2 = gameState.p2Action;
             const log = document.getElementById('combat-log');
 
-            // Extração segura do nome e nível, seja feitiço de ataque ou defesa
             const name1 = a1.spell ? a1.spell.name : (a1.spellName || '');
             const name2 = a2.spell ? a2.spell.name : (a2.spellName || '');
 
-            // Regra de cooldown do Jogador 1 (Estátua ou Avada)
             const isStatueA1 = a1.spell ? a1.spell.isStatue : (a1.isStatue || false);
             if (isStatueA1 || name1 === "Avada Kedavra") {
                 if (p1.lastSpellUsed === name1) {
