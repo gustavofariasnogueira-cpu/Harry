@@ -3,14 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Duelo de Feitiços - Hogwarts (Online)</title>
+    <title>Duelo de Feitiços - Hogwarts</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=MedievalSharp&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
     <style>
         :root {
             --gold: #e8c547;
@@ -131,6 +126,13 @@
             border-color: rgba(232, 197, 71, 0.55);
             color: #f0e6c8;
         }
+        .btn-ghost:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            filter: grayscale(0.8);
+            transform: none !important;
+            box-shadow: none !important;
+        }
         .btn-ghost.active {
             background: linear-gradient(180deg, #e8c547 0%, #c9a227 100%);
             color: #1a1205;
@@ -152,6 +154,7 @@
             border-color: rgba(232, 197, 71, 0.7);
         }
 
+        /* ===== ARENA CINEMATOGRÁFICA 3D IMERSIVA ===== */
         .duel-arena {
             height: 260px;
             position: relative;
@@ -164,6 +167,14 @@
                 radial-gradient(ellipse 60% 40% at 50% -10%, rgba(20, 70, 140, 0.35), transparent 50%),
                 linear-gradient(180deg, #070914 0%, #0e0b1a 45%, #05040a 100%);
             box-shadow: inset 0 0 70px rgba(0,0,0,0.85), 0 15px 45px rgba(0,0,0,0.5);
+        }
+
+        .duel-arena::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg, rgba(200, 160, 60, 0.08) 0%, transparent 45%);
+            pointer-events: none;
         }
 
         .arena-particles {
@@ -219,6 +230,7 @@
         .duelist.left { left: 8%; }
         .duelist.right { right: 8%; }
 
+        /* BRUXOS MAESTROS EM SILHUETA 3D ARTÍSTICA */
         .wizard-avatar {
             margin: auto;
             width: 76px;
@@ -266,6 +278,7 @@
             background: linear-gradient(180deg, #33141f, #110609);
         }
 
+        /* VARINHA MÁGICA EM RÚSTICA ELEGÂNCIA */
         .wizard-avatar .wand-stick {
             position: absolute;
             top: 68px;
@@ -284,6 +297,7 @@
             transform: rotate(35deg);
         }
 
+        /* PONTA DA VARINHA PULSANTE */
         .wizard-avatar .wand-sparkle {
             position: absolute;
             top: 64px;
@@ -316,6 +330,7 @@
             text-overflow: ellipsis;
         }
 
+        /* CENTRO DA ARENA E ESFERA DE ENERGIA */
         .arena-center {
             position: absolute;
             left: 50%;
@@ -339,6 +354,7 @@
             to { transform: translate(-50%, -50%) scale(1.35); opacity: 1; }
         }
 
+        /* ===== FEIXES DE MAGIA ÉPICOS ===== */
         .spell-beam {
             position: absolute;
             top: 46%;
@@ -360,8 +376,12 @@
             box-shadow: 0 0 12px #ff4d6d, 0 0 30px #ff4d6d, 0 0 60px rgba(255, 77, 109, 0.5);
         }
 
-        .spell-beam.fire-p1 { animation: beamFromLeft 0.75s cubic-bezier(0.1, 0.8, 0.2, 1) forwards; }
-        .spell-beam.fire-p2 { animation: beamFromRight 0.75s cubic-bezier(0.1, 0.8, 0.2, 1) forwards; }
+        .spell-beam.fire-p1 {
+            animation: beamFromLeft 0.75s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+        }
+        .spell-beam.fire-p2 {
+            animation: beamFromRight 0.75s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+        }
 
         @keyframes beamFromLeft {
             0% { opacity: 0; transform: scaleX(0.05); transform-origin: left center; }
@@ -374,6 +394,7 @@
             100% { opacity: 1; transform: scaleX(1); transform-origin: right center; }
         }
 
+        /* FAÍSCAS VOADORAS AO LONGO DO FEIXE */
         .spell-spark {
             position: absolute;
             width: 6px;
@@ -388,6 +409,7 @@
         .spell-spark.p1 { color: #5ce1ff; }
         .spell-spark.p2 { color: #ff4d6d; }
 
+        /* FLASH DE IMPACTO ESTELAR */
         .clash-flash {
             position: absolute;
             left: 50%;
@@ -401,13 +423,16 @@
             opacity: 0;
             box-shadow: 0 0 30px 15px #fff, 0 0 70px 30px #e8c547, 0 0 110px 50px rgba(140, 80, 255, 0.6);
         }
-        .clash-flash.burst { animation: clashBurst 0.65s ease-out forwards; }
+        .clash-flash.burst {
+            animation: clashBurst 0.65s ease-out forwards;
+        }
         @keyframes clashBurst {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.1); }
             25% { opacity: 1; transform: translate(-50%, -50%) scale(2); }
             100% { opacity: 0; transform: translate(-50%, -50%) scale(7); }
         }
 
+        /* ANEL DE ONDA DE CHOQUE */
         .shockwave {
             position: absolute;
             left: 50%;
@@ -421,12 +446,15 @@
             opacity: 0;
             pointer-events: none;
         }
-        .shockwave.burst { animation: shockExpand 0.7s ease-out forwards; }
+        .shockwave.burst {
+            animation: shockExpand 0.7s ease-out forwards;
+        }
         @keyframes shockExpand {
             0% { opacity: 1; transform: translate(-50%, -50%) scale(0.2); border-width: 4px; }
             100% { opacity: 0; transform: translate(-50%, -50%) scale(9); border-width: 1px; }
         }
 
+        /* BARRAS DE VIDA */
         .hp-bar-container {
             background: rgba(6, 6, 14, 0.95);
             border: 1px solid rgba(120, 100, 60, 0.45);
@@ -458,7 +486,9 @@
             scrollbar-color: rgba(200, 160, 60, 0.4) transparent;
         }
 
-        .arena-shake { animation: arenaShake 0.4s ease-out; }
+        .arena-shake {
+            animation: arenaShake 0.4s ease-out;
+        }
         @keyframes arenaShake {
             0%, 100% { transform: translateX(0); }
             20% { transform: translateX(-7px); }
@@ -469,13 +499,79 @@
 
         .defense-glow-left { filter: drop-shadow(0 0 25px rgba(92, 225, 255, 1)) !important; }
         .defense-glow-right { filter: drop-shadow(0 0 25px rgba(255, 77, 109, 1)) !important; }
+
+
+        /* Layout ampliado do duelo: arena principal + narração lateral */
+        #duel-screen {
+            width: min(98vw, 1500px);
+        }
+        .duel-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 1rem;
+            align-items: start;
+        }
+        .duel-main-column { min-width: 0; }
+        #combat-log-panel {
+            position: sticky;
+            top: 12px;
+            min-width: 0;
+        }
+        #combat-log {
+            height: min(72vh, 760px);
+            min-height: 300px;
+            overflow-y: auto;
+            background: rgba(6, 6, 14, 0.94);
+            border: 1px solid rgba(180, 150, 70, 0.3);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.55);
+            font-family: 'Orbitron', 'Cinzel', monospace;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(200, 160, 60, 0.4) transparent;
+        }
+        .duel-result-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            margin-top: 1rem;
+        }
+        .duel-result-actions button {
+            flex: 1 1 140px;
+            border-radius: 0.65rem;
+            padding: 0.7rem 0.8rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .duel-result-actions button:hover { transform: translateY(-2px); filter: brightness(1.12); }
+        .btn-restart-duel {
+            color: #17120a;
+            background: linear-gradient(135deg, #ffe28a, #d5a72e);
+            border: 1px solid #fff0b8;
+        }
+        .btn-back-menu {
+            color: #e8e6d9;
+            background: linear-gradient(135deg, #334155, #111827);
+            border: 1px solid #64748b;
+        }
+        @media (max-width: 1023px) {
+            .duel-layout { grid-template-columns: minmax(0, 1fr); }
+            #combat-log-panel { position: static; }
+            #combat-log { height: 280px; min-height: 220px; }
+            #duel-screen { width: 100%; }
+        }
+        @media (max-width: 600px) {
+            #duel-screen { padding: 0.75rem; }
+            #duel-main-column > .grid { gap: 0.5rem; }
+            #duel-main-column .config-card { padding: 0.75rem; }
+            #duel-arena { min-height: 250px; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 py-8">
 
     <header class="text-center mb-8 relative z-10">
         <h1 class="text-4xl md:text-5xl magical-title mb-2">Duelo de Feitiços</h1>
-        <p class="text-sm text-amber-200/70 tracking-widest uppercase">Hogwarts • Priori Incantatem (Online)</p>
+        <p class="text-sm text-amber-200/70 tracking-widest uppercase">Hogwarts • Priori Incantatem</p>
     </header>
 
     <!-- TELA 1: CONFIGURAÇÃO -->
@@ -485,22 +581,9 @@
         <div class="mb-6 config-card p-4 rounded-xl">
             <label class="block text-sm font-bold text-amber-200/90 mb-2 tracking-wide">Modo de Jogo</label>
             <select id="game-mode" onchange="toggleGameMode()" class="w-full rounded-lg p-2.5 text-amber-100">
-                <option value="online">Jogador vs Jogador (Online por Sala)</option>
+                <option value="pvp">Jogador vs Jogador (Local)</option>
                 <option value="pve">Jogador vs Computador (IA)</option>
             </select>
-        </div>
-
-        <!-- Opções de Sala Online -->
-        <div id="online-room-box" class="mb-6 config-card p-4 rounded-xl border-amber-500/40">
-            <h3 class="text-sm font-bold text-amber-300 mb-2">Conexão Multiplayer</h3>
-            <div class="flex flex-wrap gap-3 items-center">
-                <button onclick="createRoom()" class="btn-magic px-4 py-2 rounded-lg text-xs">Criar Nova Sala</button>
-                <div class="flex gap-2 items-center flex-1 min-w-[220px]">
-                    <input type="text" id="room-code-input" placeholder="Código da Sala" class="rounded-lg p-2 text-xs flex-1 uppercase">
-                    <button onclick="joinRoom()" class="btn-ghost px-4 py-2 rounded-lg text-xs">Entrar na Sala</button>
-                </div>
-            </div>
-            <div id="room-status-msg" class="text-xs text-amber-400 mt-2 font-mono"></div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -525,10 +608,15 @@
                     <span class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span> Oponente
                 </h3>
                 <label class="block text-xs text-slate-400 mb-1">Nome</label>
-                <input type="text" id="p2-name-input" value="Aguardando..." class="w-full rounded-lg p-2.5 mb-3" disabled>
+                <input type="text" id="p2-name-input" value="Adversário" class="w-full rounded-lg p-2.5 mb-3">
                 
                 <label class="block text-xs text-slate-400 mb-1">Casa de Hogwarts</label>
-                <select id="p2-house" class="w-full rounded-lg p-2.5 mb-3" disabled></select>
+                <select id="p2-house" class="w-full rounded-lg p-2.5 mb-3"></select>
+                
+                <div id="p2-counts-display" class="flex gap-4 text-sm mt-2">
+                    <div class="text-amber-400/90">Ataques: <span id="p2-atk-count" class="font-bold text-amber-300">0</span>/10</div>
+                    <div class="text-sky-400/90">Defesas: <span id="p2-def-count" class="font-bold text-sky-300">0</span>/3</div>
+                </div>
             </div>
         </div>
 
@@ -544,12 +632,14 @@
         </div>
 
         <button onclick="startDuel()" id="start-btn" class="btn-magic w-full mt-7 py-3.5 rounded-xl text-lg tracking-wide" disabled>
-            Pronto para o Duelo
+            Entrar no Duelo
         </button>
     </div>
 
     <!-- TELA 2: O DUELO -->
-    <div id="duel-screen" class="w-full max-w-4xl parchment rounded-2xl p-6 md:p-8 shadow-2xl hidden relative z-10">
+    <div id="duel-screen" class="w-full max-w-none parchment rounded-2xl p-4 md:p-6 shadow-2xl hidden relative z-10">
+        <div id="duel-layout" class="duel-layout">
+            <div id="duel-main-column" class="duel-main-column">
         <div class="grid grid-cols-2 gap-4 mb-5">
             <div class="config-card p-4 rounded-xl border-sky-500/30">
                 <div class="flex justify-between items-center mb-1.5">
@@ -610,21 +700,33 @@
         </div>
 
         <div id="action-panel" class="config-card p-5 rounded-xl mb-5 text-center">
-            <h3 id="current-player-turn" class="text-xl font-bold text-amber-300 mb-2 tracking-wide">Fase de Ação</h3>
-            <p id="turn-subtitle" class="text-xs text-slate-400 mb-4">Escolha sua ação secreta</p>
+            <h3 id="current-player-turn" class="text-xl font-bold text-amber-300 mb-2 tracking-wide">Vez do Jogador 1</h3>
+            <p class="text-xs text-slate-400 mb-4">Escolha sua ação e feitiço em segredo</p>
             
             <div class="flex justify-center gap-3 mb-4">
                 <button onclick="setPlayerActionType('attack')" id="btn-type-atk" class="btn-ghost active px-6 py-2.5 rounded-lg font-bold tracking-wide transition">Atacar</button>
                 <button onclick="setPlayerActionType('defense')" id="btn-type-def" class="btn-ghost px-6 py-2.5 rounded-lg font-bold tracking-wide transition">Defender</button>
             </div>
+            <p id="action-cooldown-status" class="text-[11px] text-amber-200/70 mb-4" aria-live="polite">
+                Ataques e defesas disponíveis. Cada tipo pode ser usado duas vezes seguidas.
+            </p>
 
             <div id="spell-selection-container" class="mb-4">
                 <select id="active-spell-select" class="w-full max-w-md mx-auto rounded-lg p-2.5 text-amber-100"></select>
             </div>
 
-            <button onclick="confirmTurnAction()" id="btn-confirm-action" class="btn-magic px-10 py-2.5 rounded-lg shadow-lg tracking-wide">
-                Confirmar Jogada (Secreto)
+            <button onclick="confirmTurnAction()" class="btn-magic px-10 py-2.5 rounded-lg shadow-lg tracking-wide">
+                Confirmar Ação (Secreto)
             </button>
+        </div>
+            </div>
+
+            <aside id="combat-log-panel" class="config-card rounded-xl p-4">
+                <h3 class="text-amber-300 font-bold text-sm tracking-widest mb-3">📜 NARRAÇÃO DO COMBATE</h3>
+                <div class="p-3 rounded-xl overflow-y-auto text-xs space-y-2.5" id="combat-log">
+                    <div class="text-amber-400/70">[Sistema] Duelo iniciado. Que a sorte esteja a vosso favor.</div>
+                </div>
+            </aside>
         </div>
 
         <!-- Modal de Embate -->
@@ -632,49 +734,26 @@
             <div class="config-card p-7 rounded-2xl max-w-md w-full text-center border-amber-400/50">
                 <h3 class="text-2xl font-bold text-amber-400 mb-2 tracking-wide">⚡ EMBATE DE VARINHAS</h3>
                 <p class="text-xs text-amber-200/60 mb-1 tracking-widest uppercase">Priori Incantatem</p>
-                <p id="embate-instructions" class="text-xs text-slate-300 mb-4">Choque de feitiços! Tente adivinhar o número secreto de 1 a 5.</p>
+                <p id="embate-instructions" class="text-xs text-slate-300 mb-4">Choque de feitiços de mesma intensidade! Acerte o número de 1 a 5.</p>
                 <div class="text-sm text-amber-200 mb-4">Energia Acumulada: <span id="embate-energy" class="font-bold text-xl text-amber-300">1x</span></div>
                 
                 <div id="embate-human-input" class="flex justify-center gap-2 mb-4">
                     <input type="number" id="embate-guess" min="1" max="5" placeholder="1–5" class="w-24 rounded-lg text-center text-xl text-amber-300 p-2">
-                    <button onclick="submitEmbateGuess()" class="btn-magic px-5 py-2 rounded-lg font-bold">Enviar Palpite</button>
+                    <button onclick="submitEmbateGuess()" class="btn-magic px-5 py-2 rounded-lg font-bold">Enviar</button>
                 </div>
                 <div id="embate-status" class="text-xs text-slate-400"></div>
             </div>
         </div>
 
-        <div class="p-4 rounded-xl h-52 overflow-y-auto text-xs space-y-2.5" id="combat-log">
-            <div class="text-amber-400/70">[Sistema] Duelo online conectado. Que a sorte esteja a vosso favor.</div>
-        </div>
+
     </div>
 
     <script src="spells.js"></script>
     <script>
-        // Configuração do Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyCBIG3jGDWALMkCJ1vLS0XEzfPZZzuRi6s",
-            authDomain: "harry-99baf.firebaseapp.com",
-            databaseURL: "https://harry-99baf-default-rtdb.firebaseio.com",
-            projectId: "harry-99baf",
-            storageBucket: "harry-99baf.firebasestorage.app",
-            messagingSenderId: "221578620025",
-            appId: "1:221578620025:web:95e5521c1a480c64fcb8a8"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
         let gameState = {
-            mode: 'online',
-            roomCode: null,
-            isHost: false,
-            p1: { 
-                name: "Guh", house: null, hp: 100, attacks: [], defenses: [],
-                lastSpellUsed: null, consecutiveCount: 0, cooldownTurns: 0 
-            },
-            p2: { 
-                name: "Adversário", house: null, hp: 100, attacks: [], defenses: [],
-                lastSpellUsed: null, consecutiveCount: 0, cooldownTurns: 0 
-            },
+            mode: 'pvp',
+            p1: { name: "Guh", house: null, hp: 100, attacks: [], defenses: [] },
+            p2: { name: "Adversário", house: null, hp: 100, attacks: [], defenses: [] },
             p1Action: null,
             p2Action: null,
             embateState: { active: false, spell: null, number: 0, energy: 1 }
@@ -722,20 +801,34 @@
         }
 
         function handleAtkSelectionChange() {
-            const count = document.querySelectorAll('.p1-atk-chk:checked').length;
+            const checkedBoxes = document.querySelectorAll('.p1-atk-chk:checked');
+            const count = checkedBoxes.length;
             document.getElementById('p1-atk-count').innerText = count;
+            if (gameState.mode === 'pvp') {
+                document.getElementById('p2-atk-count').innerText = count;
+            }
             const allAtkBoxes = document.querySelectorAll('.p1-atk-chk');
-            if (count >= 10) allAtkBoxes.forEach(chk => { if (!chk.checked) chk.disabled = true; });
-            else allAtkBoxes.forEach(chk => chk.disabled = false);
+            if (count >= 10) {
+                allAtkBoxes.forEach(chk => { if (!chk.checked) chk.disabled = true; });
+            } else {
+                allAtkBoxes.forEach(chk => chk.disabled = false);
+            }
             checkStartButton();
         }
 
         function handleDefSelectionChange() {
-            const count = document.querySelectorAll('.p1-def-chk:checked').length;
+            const checkedBoxes = document.querySelectorAll('.p1-def-chk:checked');
+            const count = checkedBoxes.length;
             document.getElementById('p1-def-count').innerText = count;
+            if (gameState.mode === 'pvp') {
+                document.getElementById('p2-def-count').innerText = count;
+            }
             const allDefBoxes = document.querySelectorAll('.p1-def-chk');
-            if (count >= 3) allDefBoxes.forEach(chk => { if (!chk.checked) chk.disabled = true; });
-            else allDefBoxes.forEach(chk => chk.disabled = false);
+            if (count >= 3) {
+                allDefBoxes.forEach(chk => { if (!chk.checked) chk.disabled = true; });
+            } else {
+                allDefBoxes.forEach(chk => chk.disabled = false);
+            }
             checkStartButton();
         }
 
@@ -753,294 +846,332 @@
         function toggleGameMode() {
             const mode = document.getElementById('game-mode').value;
             gameState.mode = mode;
-            const onlineBox = document.getElementById('online-room-box');
+            const p2BoxTitle = document.getElementById('p2-box-title');
             const p2NameInput = document.getElementById('p2-name-input');
-            const p2HouseSelect = document.getElementById('p2-house');
+            const p2Counts = document.getElementById('p2-counts-display');
 
             if (mode === 'pve') {
-                onlineBox.classList.add('hidden');
-                document.getElementById('p2-box-title').innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span> Computador (IA)`;
+                p2BoxTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span> Computador (IA)`;
                 p2NameInput.value = "Professor Severus";
                 p2NameInput.disabled = true;
-                p2HouseSelect.disabled = true;
-                document.getElementById('start-btn').innerText = "Entrar no Duelo";
+                p2Counts.classList.add('hidden');
             } else {
-                onlineBox.classList.remove('hidden');
-                document.getElementById('p2-box-title').innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span> Oponente`;
-                p2NameInput.value = "Aguardando...";
-                p2NameInput.disabled = true;
-                p2HouseSelect.disabled = true;
-                document.getElementById('start-btn').innerText = "Aguardando Conexão da Sala...";
-                document.getElementById('start-btn').disabled = true;
+                p2BoxTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span> Jogador 2`;
+                p2NameInput.value = "Adversário";
+                p2NameInput.disabled = false;
+                p2Counts.classList.remove('hidden');
             }
-        }
-
-        // Funções de Multiplayer via Firebase
-        function createRoom() {
-            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-            gameState.roomCode = code;
-            gameState.isHost = true;
-
-            const roomRef = db.ref('rooms/' + code);
-            roomRef.set({
-                status: 'waiting',
-                p1: { name: document.getElementById('p1-name-input').value, house: document.getElementById('p1-house').value, hp: 100 },
-                p2: { name: null, house: null, hp: 100 }
-            });
-
-            document.getElementById('room-status-msg').innerText = `Sala criada! Código: ${code}. Aguardando oponente entrar...`;
-            listenToRoom(code);
-           // Dentro de listenToRoom, adicione monitoramento para fechar o modal de embate se o oponente acertar:
-        db.ref('rooms/' + code + '/embateResolved').on('value', (snap) => {
-            if (snap.val() === true) {
-                document.getElementById('embate-modal').classList.add('hidden');
-                gameState.embateState.active = false;
-            }
-        });
-            
-        }
-
-        function joinRoom() {
-            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if (!code) {
-                alert('Digite o código da sala!');
-                return;
-            }
-            gameState.roomCode = code;
-            gameState.isHost = false;
-
-            const roomRef = db.ref('rooms/' + code);
-            roomRef.once('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    roomRef.update({
-                        status: 'ready',
-                        'p2/name': document.getElementById('p1-name-input').value,
-                        'p2/house': document.getElementById('p1-house').value
-                    });
-                    document.getElementById('room-status-msg').innerText = `Conectado à sala ${code}! Pronto para iniciar.`;
-                    document.getElementById('start-btn').disabled = false;
-                    document.getElementById('start-btn').innerText = "Entrar no Duelo";
-                    listenToRoom(code);
-                } else {
-                    alert('Sala não encontrada!');
-                }
-            });
-        }
-
-        function listenToRoom(code) {
-            const roomRef = db.ref('rooms/' + code);
-            roomRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
-
-                if (gameState.isHost && data.status === 'ready') {
-                    document.getElementById('p2-name-input').value = data.p2.name;
-                    document.getElementById('room-status-msg').innerText = `Oponente ${data.p2.name} entrou na sala!`;
-                    document.getElementById('start-btn').disabled = false;
-                    document.getElementById('start-btn').innerText = "Entrar no Duelo";
-                }
-            });
+            checkStartButton();
         }
 
         function startDuel() {
             gameState.p1.name = document.getElementById('p1-name-input').value || "Jogador 1";
+            gameState.p2.name = document.getElementById('p2-name-input').value || "Adversário";
+
             const p1HouseId = document.getElementById('p1-house').value;
+            const p2HouseId = document.getElementById('p2-house').value;
+            
             gameState.p1.house = HOUSES.find(h => h.id === p1HouseId);
+            gameState.p2.house = HOUSES.find(h => h.id === p2HouseId);
 
             const atkIndices = Array.from(document.querySelectorAll('.p1-atk-chk:checked')).map(el => parseInt(el.value));
             const defIndices = Array.from(document.querySelectorAll('.p1-def-chk:checked')).map(el => parseInt(el.value));
 
             gameState.p1.attacks = atkIndices.map(i => ATTACK_SPELLS[i]);
             gameState.p1.defenses = defIndices.map(i => DEFENSE_SPELLS[i]);
+            
+            gameState.p2.attacks = [...gameState.p1.attacks];
+            gameState.p2.defenses = [...gameState.p1.defenses];
 
-            if (gameState.mode === 'pve') {
-                gameState.p2.name = "Professor Severus";
-                gameState.p2.house = HOUSES[1];
-                gameState.p2.attacks = [...gameState.p1.attacks];
-                gameState.p2.defenses = [...gameState.p1.defenses];
-                
-                iniciarTelasDuelo();
-            } else {
-                const code = gameState.roomCode;
-                const roomRef = db.ref('rooms/' + code);
-                roomRef.once('value', (snap) => {
-                    const data = snap.val();
-                    if (data) {
-                        // Se sou o host, pego os dados do p2. Se sou o p2, pego os dados do p1 (host).
-                        const oppData = gameState.isHost ? data.p2 : data.p1;
-                        gameState.p2.name = oppData && oppData.name ? oppData.name : "Adversário";
-                        gameState.p2.house = oppData && oppData.house ? HOUSES.find(h => h.id === oppData.house) : HOUSES[0];
-                    } else {
-                        gameState.p2.name = "Adversário";
-                        gameState.p2.house = HOUSES[0];
-                    }
-                    gameState.p2.attacks = [...gameState.p1.attacks];
-                    gameState.p2.defenses = [...gameState.p1.defenses];
-
-                    iniciarTelasDuelo();
-                });
-            }
-        }
-
-        function iniciarTelasDuelo() {
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('duel-screen').classList.remove('hidden');
-
+            
             document.getElementById('p1-name-display').innerText = gameState.p1.name;
             document.getElementById('arena-p1-name').innerText = gameState.p1.name;
             document.getElementById('p1-house-display').innerText = gameState.p1.house.name;
-
             document.getElementById('p2-name-display').innerText = gameState.p2.name;
             document.getElementById('arena-p2-name').innerText = gameState.p2.name;
-            document.getElementById('p2-house-display').innerText = gameState.p2.house ? gameState.p2.house.name : 'Casa';
+            document.getElementById('p2-house-display').innerText = gameState.p2.house.name;
 
             prepareTurnInput();
         }
 
+        let currentSelectingPlayer = 'p1';
         let selectedActionType = 'attack';
+        let lastActionTypeByPlayer = { p1: 'attack', p2: 'attack' };
+        let tempP1Action = null;
+
+
+        // Recarga individual por feitiço: após usar o mesmo feitiço duas vezes
+        // consecutivas, ele fica indisponível pelas três rodadas seguintes.
+        let duelRoundNumber = 0;
+        const spellRepeatState = {
+            p1: {}, p2: {}
+        };
+
+        function spellStateKey(type, spell) {
+            return `${type}:${spell.name}`;
+        }
+
+        function getSpellState(playerKey, type, spell) {
+            const key = spellStateKey(type, spell);
+            if (!spellRepeatState[playerKey][key]) {
+                spellRepeatState[playerKey][key] = { streak: 0, cooldownUntil: 0 };
+            }
+            return spellRepeatState[playerKey][key];
+        }
+
+        function isSpellAvailable(playerKey, type, spell) {
+            return duelRoundNumber >= getSpellState(playerKey, type, spell).cooldownUntil;
+        }
+
+        function getSpellCooldownRounds(playerKey, type, spell) {
+            return Math.max(0, getSpellState(playerKey, type, spell).cooldownUntil - duelRoundNumber);
+        }
+
+        function refreshActionTypeButtons() {
+            const playerKey = currentSelectingPlayer;
+            const player = playerKey === 'p1' ? gameState.p1 : gameState.p2;
+            const atkBtn = document.getElementById('btn-type-atk');
+            const defBtn = document.getElementById('btn-type-def');
+            const atkAvailable = player.attacks.some(sp => isSpellAvailable(playerKey, 'attack', sp));
+            const defAvailable = player.defenses.some(sp => isSpellAvailable(playerKey, 'defense', sp));
+            atkBtn.disabled = !atkAvailable;
+            defBtn.disabled = !defAvailable;
+            atkBtn.textContent = atkAvailable ? 'Atacar' : 'Ataques em recarga';
+            defBtn.textContent = defAvailable ? 'Defender' : 'Defesas em recarga';
+            const status = document.getElementById('action-cooldown-status');
+            if (status) status.textContent = 'A recarga é aplicada ao feitiço específico; escolha outro feitiço disponível.';
+        }
+
+        function registerSpellUse(playerKey, type, spell) {
+            const state = getSpellState(playerKey, type, spell);
+            if (!isSpellAvailable(playerKey, type, spell)) return false;
+            state.streak += 1;
+            if (state.streak >= 2) {
+                state.cooldownUntil = duelRoundNumber + 4;
+                state.streak = 0;
+                const playerName = playerKey === 'p1' ? gameState.p1.name : gameState.p2.name;
+                const log = document.getElementById('combat-log');
+                if (log) {
+                    log.innerHTML = `<div class="text-amber-300 border-b border-amber-900/30 pb-2 mb-2">[Recarga] ${playerName} usou ${spell.name} duas vezes seguidas. Este feitiço ficará indisponível por 3 rodadas; escolha outro.</div>` + log.innerHTML;
+                }
+            }
+            return true;
+        }
 
         function setPlayerActionType(type) {
+            const playerKey = currentSelectingPlayer;
+            const player = playerKey === 'p1' ? gameState.p1 : gameState.p2;
+            if (type === 'attack' && !player.attacks.some(sp => isSpellAvailable(playerKey, 'attack', sp))) {
+                type = player.defenses.some(sp => isSpellAvailable(playerKey, 'defense', sp)) ? 'defense' : 'attack';
+            } else if (type === 'defense' && !player.defenses.some(sp => isSpellAvailable(playerKey, 'defense', sp))) {
+                type = player.attacks.some(sp => isSpellAvailable(playerKey, 'attack', sp)) ? 'attack' : 'defense';
+            }
+
             selectedActionType = type;
+            if (type === 'attack' || type === 'defense') lastActionTypeByPlayer[playerKey] = type;
             const btnAtk = document.getElementById('btn-type-atk');
             const btnDef = document.getElementById('btn-type-def');
             const select = document.getElementById('active-spell-select');
             select.innerHTML = '';
-
-            const player = gameState.p1;
+            select.dataset.actionType = type;
 
             if (type === 'attack') {
-                btnAtk.classList.add('active');
-                btnDef.classList.remove('active');
+                btnAtk.classList.add('active'); btnDef.classList.remove('active');
                 player.attacks.forEach((sp, idx) => {
-                    select.innerHTML += `<option value="${idx}">${sp.name} (Nível ${sp.level})</option>`;
+                    const left = getSpellCooldownRounds(playerKey, 'attack', sp);
+                    select.innerHTML += `<option value="${idx}" ${left > 0 ? 'disabled' : ''}>${sp.name} (Nível ${sp.level})${left > 0 ? ` — recarga: ${left} rodada${left === 1 ? '' : 's'}` : ''}</option>`;
                 });
-            } else {
-                btnDef.classList.add('active');
-                btnAtk.classList.remove('active');
+            } else if (type === 'defense') {
+                btnDef.classList.add('active'); btnAtk.classList.remove('active');
                 player.defenses.forEach((sp, idx) => {
-                    select.innerHTML += `<option value="${idx}">${sp.name} (Nível ${sp.level})</option>`;
+                    const left = getSpellCooldownRounds(playerKey, 'defense', sp);
+                    select.innerHTML += `<option value="${idx}" ${left > 0 ? 'disabled' : ''}>${sp.name} (Nível ${sp.level})${left > 0 ? ` — recarga: ${left} rodada${left === 1 ? '' : 's'}` : ''}</option>`;
                 });
             }
             select.selectedIndex = 0;
+            while (select.selectedIndex >= 0 && select.options[select.selectedIndex]?.disabled) select.selectedIndex++;
+            refreshActionTypeButtons();
         }
 
         function prepareTurnInput() {
             gameState.p1Action = null;
             gameState.p2Action = null;
-            document.getElementById('current-player-turn').innerText = "Fase de Ação Secreta";
-            document.getElementById('turn-subtitle').innerText = "Escolha sua magia e confirme em segredo";
-            document.getElementById('btn-confirm-action').disabled = false;
-            setPlayerActionType('attack');
+            tempP1Action = null;
+            currentSelectingPlayer = 'p1';
+            document.getElementById('current-player-turn').innerText = `Vez de ${gameState.p1.name} (Secreto)`;
+            setPlayerActionType(lastActionTypeByPlayer.p1 || 'attack');
         }
 
         function confirmTurnAction() {
             const selectElement = document.getElementById('active-spell-select');
             const selectedValue = selectElement.value;
-            if (selectedValue === '' || selectElement.options.length === 0) {
-                alert('Selecione um feitiço válido.');
+            const actionType = selectElement.dataset.actionType;
+
+            if (actionType === 'pass') {
+                const actionData = { type: 'pass', spell: null };
+                if (gameState.mode === 'pve') {
+                    gameState.p1Action = actionData;
+                    gameState.p2Action = getComputerAction();
+                    resolveRoundWithAnimation();
+                } else if (currentSelectingPlayer === 'p1') {
+                    tempP1Action = actionData;
+                    currentSelectingPlayer = 'p2';
+                    document.getElementById('current-player-turn').innerText = `Vez de ${gameState.p2.name} (Secreto)`;
+                    setPlayerActionType(lastActionTypeByPlayer.p2 || 'attack');
+                } else {
+                    gameState.p1Action = tempP1Action;
+                    gameState.p2Action = actionData;
+                    resolveRoundWithAnimation();
+                }
                 return;
             }
 
-            const realIdx = parseInt(selectedValue, 10);
-            const spellList = selectedActionType === 'attack' ? gameState.p1.attacks : gameState.p1.defenses;
+            if ((actionType !== 'attack' && actionType !== 'defense') ||
+                selectedValue === '' || selectElement.options.length === 0) {
+                alert('Selecione um ataque ou uma defesa antes de confirmar.');
+                return;
+            }
+
+            const playerKey = currentSelectingPlayer;
+            const player = playerKey === 'p1' ? gameState.p1 : gameState.p2;
+            const realIdx = Number.parseInt(selectedValue, 10);
+            const spellList = actionType === 'attack' ? player.attacks : player.defenses;
             const spell = spellList[realIdx];
-
-            // Validação da regra de Cooldown por uso consecutivo de feitiços especiais (Estátua ou Avada Kedavra)
-            if (gameState.p1.cooldownTurns > 0 && (spell.isStatue || spell.name === "Avada Kedavra")) {
-                alert(`Este feitiço poderoso está em exaustão! Aguarde mais ${gameState.p1.cooldownTurns} rodada(s) para reutilizá-lo.`);
+            if (!spell) {
+                alert('O feitiço selecionado é inválido. Escolha novamente.');
                 return;
             }
 
-            const actionData = { 
-                type: selectedActionType, 
-                spell: spell 
-            };
-
-            document.getElementById('btn-confirm-action').disabled = true;
-            document.getElementById('turn-subtitle').innerText = "Aguardando oponente confirmar ação...";
+            if (!registerSpellUse(playerKey, actionType, spell)) {
+                alert('Esse feitiço está em recarga. Escolha outro feitiço disponível.');
+                setPlayerActionType(actionType);
+                return;
+            }
+            const actionData = { type: actionType, spell: spell };
 
             if (gameState.mode === 'pve') {
                 gameState.p1Action = actionData;
                 gameState.p2Action = getComputerAction();
                 resolveRoundWithAnimation();
             } else {
-                const myKey = gameState.isHost ? 'actionP1' : 'actionP2';
-                db.ref('rooms/' + gameState.roomCode + '/' + myKey).set(actionData);
-                waitForBothActions();
-            }
-        }
-
-        function waitForBothActions() {
-            const roomRef = db.ref('rooms/' + gameState.roomCode);
-            roomRef.on('value', (snap) => {
-                const data = snap.val();
-                if (!data) return;
-
-                const act1 = data.actionP1;
-                const act2 = data.actionP2;
-
-                if (act1 && act2) {
-                    roomRef.off('value');
-                    gameState.p1Action = gameState.isHost ? act1 : act2;
-                    gameState.p2Action = gameState.isHost ? act2 : act1;
+                if (currentSelectingPlayer === 'p1') {
+                    tempP1Action = actionData;
+                    currentSelectingPlayer = 'p2';
+                    document.getElementById('current-player-turn').innerText = `Vez de ${gameState.p2.name} (Secreto)`;
+                    setPlayerActionType(lastActionTypeByPlayer.p2 || 'attack');
+                } else {
+                    gameState.p1Action = tempP1Action;
+                    gameState.p2Action = actionData;
                     resolveRoundWithAnimation();
                 }
-            });
+            }
         }
 
         function getComputerAction() {
-            const isAttack = Math.random() > 0.4;
-            if (isAttack) {
-                const randIdx = Math.floor(Math.random() * gameState.p2.attacks.length);
-                return { type: 'attack', spell: gameState.p2.attacks[randIdx] };
-            } else {
-                const randIdx = Math.floor(Math.random() * gameState.p2.defenses.length);
-                return { type: 'defense', spell: gameState.p2.defenses[randIdx] };
+            const availableTypes = ['attack', 'defense'].filter(type => {
+                const list = type === 'attack' ? gameState.p2.attacks : gameState.p2.defenses;
+                return list.some(sp => isSpellAvailable('p2', type, sp));
+            });
+
+            if (availableTypes.length === 0) {
+                return { type: 'pass', spell: null };
             }
+
+            let chosenType;
+            if (availableTypes.length === 1) {
+                chosenType = availableTypes[0];
+            } else {
+                chosenType = Math.random() > 0.4 ? 'attack' : 'defense';
+            }
+
+            const spellList = chosenType === 'attack' ? gameState.p2.attacks : gameState.p2.defenses;
+            const availableSpells = spellList.filter(sp => isSpellAvailable('p2', chosenType, sp));
+            if (availableSpells.length === 0) {
+                const otherType = chosenType === 'attack' ? 'defense' : 'attack';
+                const otherList = otherType === 'attack' ? gameState.p2.attacks : gameState.p2.defenses;
+                const otherAvailable = otherList.filter(sp => isSpellAvailable('p2', otherType, sp));
+                if (otherAvailable.length === 0) return { type: 'pass', spell: null };
+                chosenType = otherType;
+                const spell = otherAvailable[Math.floor(Math.random() * otherAvailable.length)];
+                registerSpellUse('p2', chosenType, spell);
+                return { type: chosenType, spell };
+            }
+            const spell = availableSpells[Math.floor(Math.random() * availableSpells.length)];
+            registerSpellUse('p2', chosenType, spell);
+            return { type: chosenType, spell };
         }
 
+        let cinematicResolving = false;
+
         function resolveRoundWithAnimation() {
+            if (cinematicResolving) return;
+            cinematicResolving = true;
+            const confirmButton = document.querySelector('#action-panel button[onclick="confirmTurnAction()"]');
+            if (confirmButton) confirmButton.disabled = true;
+
             const a1 = gameState.p1Action;
             const a2 = gameState.p2Action;
             if (a1 && a2 && (a1.type === 'attack' || a2.type === 'attack')) {
                 fireDuelSpells(a1, a2);
                 setTimeout(() => {
                     resolveRound();
+                    cinematicResolving = false;
+                    if (confirmButton) confirmButton.disabled = false;
                 }, 900);
             } else {
                 resolveRound();
+                cinematicResolving = false;
+                if (confirmButton) confirmButton.disabled = false;
             }
         }
 
         function fireDuelSpells(a1, a2) {
             const arena = document.getElementById('duel-arena');
             if (!arena) return;
+
             arena.querySelectorAll('.spell-beam, .spell-spark').forEach(node => node.remove());
 
             const center = document.getElementById('arena-center');
             const flash = document.getElementById('arena-flash');
             const shock = document.getElementById('arena-shock');
             center.classList.add('active');
+            flash.classList.remove('burst');
+            shock.classList.remove('burst');
+            void flash.offsetWidth;
+            void shock.offsetWidth;
+
+            const leftAvatar = document.querySelector('.duelist.left .wizard-avatar');
+            const rightAvatar = document.querySelector('.duelist.right .wizard-avatar');
 
             if (a1.type === 'attack') {
                 const beam = document.createElement('div');
                 beam.className = 'spell-beam p1 fire-p1';
                 arena.appendChild(beam);
                 spawnSparks(arena, 'p1');
+            } else {
+                leftAvatar.classList.add('defense-glow-left');
+                setTimeout(() => leftAvatar.classList.remove('defense-glow-left'), 850);
             }
+
             if (a2.type === 'attack') {
                 const beam = document.createElement('div');
                 beam.className = 'spell-beam p2 fire-p2';
                 arena.appendChild(beam);
                 spawnSparks(arena, 'p2');
+            } else {
+                rightAvatar.classList.add('defense-glow-right');
+                setTimeout(() => rightAvatar.classList.remove('defense-glow-right'), 850);
             }
 
+            const impactDelay = (a1.type === 'attack' && a2.type === 'attack') ? 500 : 580;
             setTimeout(() => {
                 flash.classList.add('burst');
                 shock.classList.add('burst');
                 arena.classList.add('arena-shake');
                 setTimeout(() => arena.classList.remove('arena-shake'), 400);
-            }, 500);
+            }, impactDelay);
 
             setTimeout(() => {
                 center.classList.remove('active');
@@ -1054,71 +1185,79 @@
             for (let i = 0; i < 5; i++) {
                 const spark = document.createElement('div');
                 spark.className = `spell-spark ${side}`;
-                spark.style.left = (side === 'p1' ? 22 : 70) + '%';
-                spark.style.top = '45%';
+                const startX = side === 'p1' ? 18 + Math.random() * 8 : 74 - Math.random() * 8;
+                spark.style.left = startX + '%';
+                spark.style.top = (44 + Math.random() * 8) + '%';
                 arena.appendChild(spark);
+
+                const delay = 70 + i * 60;
                 setTimeout(() => {
-                    spark.style.transition = 'all 0.5s';
+                    spark.style.transition = 'all 0.5s cubic-bezier(0.2, 0.8, 0.3, 1)';
                     spark.style.opacity = '1';
                     spark.style.left = '49%';
-                }, 70 + i * 50);
+                    spark.style.top = '45%';
+                    spark.style.transform = 'scale(0.3)';
+                }, delay);
+                setTimeout(() => { spark.style.opacity = '0'; }, delay + 400);
             }
         }
 
         function resolveRound() {
+            duelRoundNumber += 1;
             const p1 = gameState.p1;
             const p2 = gameState.p2;
             const a1 = gameState.p1Action;
             const a2 = gameState.p2Action;
             const log = document.getElementById('combat-log');
 
-            // Gerenciamento de cooldown e uso consecutivo do Jogador 1
-            if (a1.spell.isStatue || a1.spell.name === "Avada Kedavra") {
-                if (p1.lastSpellUsed === a1.spell.name) {
-                    p1.consecutiveCount++;
-                    if (p1.consecutiveCount >= 2) {
-                        p1.cooldownTurns = 2; // Entra em exaustão por 2 rodadas após o 2º uso consecutivo
-                        p1.consecutiveCount = 0;
-                    }
-                } else {
-                    p1.lastSpellUsed = a1.spell.name;
-                    p1.consecutiveCount = 1;
-                }
-            } else {
-                p1.consecutiveCount = 0;
-            }
-            if (p1.cooldownTurns > 0) p1.cooldownTurns--;
-
             let narrative = `<div class="border-b border-amber-900/30 pb-2.5 mb-2.5"><div class="text-amber-300 font-bold mb-1.5 tracking-wide">── Resolução da Rodada ──</div>`;
-            narrative += `<div>🧙‍♂️ <strong class="text-sky-300">${p1.name}</strong> conjurou: <span class="text-amber-200">${a1.spell.name}</span></div>`;
-            narrative += `<div>🧙‍♂️ <strong class="text-rose-300">${p2.name}</strong> conjurou: <span class="text-amber-200">${a2.spell.name}</span></div>`;
+            const actionText = action => {
+                if (action.type === 'pass' || !action.spell) return 'Passou a vez (recarga)';
+                return `${action.spell.name} (${action.type === 'attack' ? 'Ataque Nv.' + action.spell.level : 'Defesa Nv.' + action.spell.level})`;
+            };
+            narrative += `<div>🧙‍♂️ <strong class="text-sky-300">${p1.name}</strong> conjurou: <span class="text-amber-200">${actionText(a1)}</span></div>`;
+            narrative += `<div>🧙‍♂️ <strong class="text-rose-300">${p2.name}</strong> conjurou: <span class="text-amber-200">${actionText(a2)}</span></div>`;
 
-            if (a1.type === 'attack' && a2.type === 'attack') {
+            if (a1.type === 'pass' || a2.type === 'pass') {
+                const passer = a1.type === 'pass' ? p1.name : p2.name;
+                narrative += `<div class="text-slate-400 mt-1.5">⏳ ${passer} passou a vez porque ataques e defesas estão em recarga. A rodada transcorreu sem resolução de feitiços.</div></div>`;
+            }
+            else if (a1.type === 'attack' && a2.type === 'attack') {
                 if (a1.spell.level === a2.spell.level) {
-                    narrative += `<div class="text-purple-400 font-bold mt-1.5">⚡ Choque de feitiços de mesmo nível! Priori Incantatem ativado!</div></div>`;
+                    narrative += `<div class="text-purple-400 font-bold mt-1.5">⚡ Choque de feitiços! Ambos os ataques têm nível ${a1.spell.level}. O Priori Incantatem foi travado!</div></div>`;
                     log.innerHTML = narrative + log.innerHTML;
                     startEmbate(a1.spell);
                     return;
                 } else if (a1.spell.level > a2.spell.level) {
-                    const dmg = applyDamageDirect('p2', a1.spell.level * 5);
-                    narrative += `<div class="text-sky-400 mt-1.5">⚔️ O ataque de ${p1.name} superou o de ${p2.name}, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
+                    const dmg = applyDamage('p2', a1.spell);
+                    narrative += `<div class="text-sky-400 mt-1.5">⚔️ O ataque de ${p1.name} (${a1.spell.name}, Nv.${a1.spell.level}) superou o de ${p2.name} e atingiu em cheio, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
                 } else {
-                    const dmg = applyDamageDirect('p1', a2.spell.level * 5);
-                    narrative += `<div class="text-rose-400 mt-1.5">⚔️ O ataque de ${p2.name} superou o de ${p1.name}, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
+                    const dmg = applyDamage('p1', a2.spell);
+                    narrative += `<div class="text-rose-400 mt-1.5">⚔️ O ataque de ${p2.name} (${a2.spell.name}, Nv.${a2.spell.level}) superou o de ${p1.name} e atingiu em cheio, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
                 }
-            } else if (a1.type === 'attack' && a2.type === 'defense') {
+            } 
+            else if (a1.type === 'attack' && a2.type === 'defense') {
                 narrative += resolveDetailedAttackDefense(p1, p2, a1.spell, a2.spell, 'p2');
-            } else if (a1.type === 'defense' && a2.type === 'attack') {
+            } 
+            else if (a1.type === 'defense' && a2.type === 'attack') {
                 narrative += resolveDetailedAttackDefense(p2, p1, a2.spell, a1.spell, 'p1');
-            } else {
-                narrative += `<div class="text-slate-400 mt-1.5">🛡️ Ambos adotaram posturas defensivas.</div></div>`;
+            } 
+            else {
+                narrative += `<div class="text-slate-400 mt-1.5">🛡️ Ambos os bruxos adotaram posturas defensivas. Nenhum feitiço ofensivo foi lançado.</div></div>`;
             }
 
             log.innerHTML = narrative + log.innerHTML;
             checkGameOver();
         }
 
-        function applyDamageDirect(targetKey, damage) {
+        function applyDamage(targetKey, spell) {
+            if (spell.name === "Avada Kedavra") {
+                gameState[targetKey].hp = 0;
+                document.getElementById(`${targetKey}-hp-text`).innerText = 0;
+                document.getElementById(`${targetKey}-hp-bar`).style.width = '0%';
+                return "Morte Instantânea";
+            }
+            const damage = spell.level * 5;
             gameState[targetKey].hp = Math.max(0, gameState[targetKey].hp - damage);
             document.getElementById(`${targetKey}-hp-text`).innerText = gameState[targetKey].hp;
             document.getElementById(`${targetKey}-hp-bar`).style.width = `${gameState[targetKey].hp}%`;
@@ -1127,7 +1266,7 @@
 
         function resolveDetailedAttackDefense(attacker, defender, attackSpell, defenseSpell, defenderKey) {
             if (attackSpell.name === "Avada Kedavra" && !defenseSpell.isStatue) {
-                applyDamageDirect(defenderKey, 100);
+                applyDamage(defenderKey, attackSpell);
                 return `<div class="text-red-500 font-bold mt-1.5">💀 ${attacker.name} disparou o <strong>Avada Kedavra</strong>! A defesa ${defenseSpell.name} de ${defender.name} falhou! Morte instantânea!</div></div>`;
             }
 
@@ -1136,82 +1275,189 @@
             } else {
                 const diff = attackSpell.level - defenseSpell.level;
                 const residualDamage = diff * 3;
-                applyDamageDirect(defenderKey, residualDamage);
+                gameState[defenderKey].hp = Math.max(0, gameState[defenderKey].hp - residualDamage);
+                document.getElementById(`${defenderKey}-hp-text`).innerText = gameState[defenderKey].hp;
+                document.getElementById(`${defenderKey}-hp-bar`).style.width = `${gameState[defenderKey].hp}%`;
                 return `<div class="text-amber-400 mt-1.5">⚠️ ${defender.name} tentou se defender com <strong>${defenseSpell.name}</strong> (Nv.${defenseSpell.level}), mas o ataque era mais forte! Dano residual de <strong>${residualDamage}</strong> pontos!</div></div>`;
             }
         }
 
         function startEmbate(spell) {
-            gameState.embateState = { 
-                active: true, 
-                spell: spell, 
-                number: Math.floor(Math.random() * 5) + 1, 
-                energy: 1 
+            gameState.embateState = {
+                active: true,
+                spell: spell,
+                number: Math.floor(Math.random() * 5) + 1,
+                energy: 1,
+                nextGuesser: 'p1',
+                guessedThisCycle: []
             };
             document.getElementById('embate-modal').classList.remove('hidden');
             document.getElementById('embate-energy').innerText = '1x';
             document.getElementById('embate-guess').value = '';
-            document.getElementById('embate-status').innerText = "⚡ Choque de varinhas! Digite um número de 1 a 5 e envie.";
+            document.getElementById('embate-status').innerText = gameState.mode === 'pve'
+                ? `Choque de nível ${spell.level}! Você (${gameState.p1.name}) tenta acertar o número de 1 a 5.`
+                : `Choque de nível ${spell.level}! Vez de ${gameState.p1.name}: palpite de 1 a 5.`;
+            document.getElementById('embate-human-input').classList.remove('hidden');
             document.getElementById('embate-guess').disabled = false;
+            document.querySelector('#embate-human-input button').disabled = false;
+
+            if (gameState.mode === 'pve') {
+                setTimeout(() => resolveEmbateAI(), 1200);
+            }
         }
 
         function submitEmbateGuess() {
-            const guessInput = document.getElementById('embate-guess');
-            const guess = parseInt(guessInput.value, 10);
-            
-            if (isNaN(guess) || guess < 1 || guess > 5) {
+            if (!gameState.embateState.active) return;
+            const guess = Number.parseInt(document.getElementById('embate-guess').value, 10);
+            if (!Number.isInteger(guess) || guess < 1 || guess > 5) {
                 alert('Digite um número válido entre 1 e 5!');
                 return;
             }
+            const guesserKey = gameState.mode === 'pvp' ? gameState.embateState.nextGuesser : 'p1';
+            evaluateEmbate(guess, guesserKey);
+        }
 
+        function resolveEmbateAI() {
+            if (!gameState.embateState.active || gameState.mode !== 'pve') return;
+            const aiGuess = Math.floor(Math.random() * 5) + 1;
+            evaluateEmbate(aiGuess, 'p2');
+        }
+
+        function evaluateEmbate(guess, guesserKey) {
             const state = gameState.embateState;
             if (!state.active) return;
 
-            // Verifica se o palpite acertou o número secreto sorteado
             if (guess === state.number) {
-                // ACERTOU! Fecha o modal para todos e aplica o dano refletido multiplicado
                 document.getElementById('embate-modal').classList.add('hidden');
                 state.active = false;
-                
-                const loser = gameState.isHost ? 'p2' : 'p1';
+                const winner = guesserKey;
+                const loser = winner === 'p1' ? 'p2' : 'p1';
                 const totalDmg = state.spell.level * 8 * state.energy;
-                
-                applyDamageDirect(loser, totalDmg);
-                document.getElementById('combat-log').innerHTML = `<div class="text-purple-400 font-bold">⚡ Priori Incantatem vencido! Acertou o número secreto ${state.number} e refletiu <strong class="text-amber-300">${totalDmg}</strong> de dano!</div>` + document.getElementById('combat-log').innerHTML;
-                
-                // Se estiver online, avisa o Firebase para fechar a tela do oponente também
-                if (gameState.mode === 'online') {
-                    db.ref('rooms/' + gameState.roomCode).update({ 
-                        embateResolved: true, 
-                        loserKey: loser, 
-                        damage: totalDmg 
-                    });
-                }
-                
+                gameState[loser].hp = Math.max(0, gameState[loser].hp - totalDmg);
+                document.getElementById(`${loser}-hp-text`).innerText = gameState[loser].hp;
+                document.getElementById(`${loser}-hp-bar`).style.width = `${gameState[loser].hp}%`;
+
+                document.getElementById('combat-log').innerHTML = `<div class="text-purple-400 font-bold">⚡ Priori Incantatem vencido por ${gameState[winner].name}! Acertou o número secreto ${state.number} e refletiu <strong class="text-amber-300">${totalDmg}</strong> de dano em ${gameState[loser].name}!</div>` + document.getElementById('combat-log').innerHTML;
                 checkGameOver();
+                return;
+            }
+
+            document.getElementById('embate-guess').value = '';
+            state.guessedThisCycle.push(guesserKey);
+
+            if (gameState.mode === 'pvp') {
+                if (state.guessedThisCycle.length < 2) {
+                    state.nextGuesser = guesserKey === 'p1' ? 'p2' : 'p1';
+                    document.getElementById('embate-status').innerText = `${gameState[guesserKey].name} errou (${guess}). Agora é a vez de ${gameState[state.nextGuesser].name}.`;
+                } else {
+                    state.energy++;
+                    state.number = Math.floor(Math.random() * 5) + 1;
+                    state.guessedThisCycle = [];
+                    state.nextGuesser = 'p1';
+                    document.getElementById('embate-energy').innerText = `${state.energy}x`;
+                    document.getElementById('embate-status').innerText = `Ambos erraram. Energia subiu para ${state.energy}x. Novo número — vez de ${gameState.p1.name}.`;
+                }
             } else {
-                // ERROU! Acumula a energia e sorteia um novo número
-                state.energy++;
-                state.number = Math.floor(Math.random() * 5) + 1;
-                document.getElementById('embate-energy').innerText = `${state.energy}x`;
-                guessInput.value = '';
-                document.getElementById('embate-status').innerText = `❌ Errou! O número era outro. A energia acumulada subiu para ${state.energy}x! Tente novamente.`;
+                if (guesserKey === 'p1') {
+                    document.getElementById('embate-status').innerText = `${gameState.p1.name} errou (${guess}). A IA está tentando...`;
+                    document.getElementById('embate-guess').disabled = true;
+                    document.querySelector('#embate-human-input button').disabled = true;
+                    setTimeout(() => {
+                        if (!state.active) return;
+                        document.getElementById('embate-guess').disabled = false;
+                        document.querySelector('#embate-human-input button').disabled = false;
+                        resolveEmbateAI();
+                    }, 1000);
+                } else {
+                    state.energy++;
+                    state.number = Math.floor(Math.random() * 5) + 1;
+                    document.getElementById('embate-energy').innerText = `${state.energy}x`;
+                    document.getElementById('embate-status').innerText = `A IA errou (${guess}). Novo número sorteado. Tente novamente, ${gameState.p1.name}!`;
+                }
             }
         }
 
+        function restartDuel() {
+            gameState.p1.hp = 100;
+            gameState.p2.hp = 100;
+            gameState.p1Action = null;
+            gameState.p2Action = null;
+            gameState.embateState = { active: false, spell: null, number: 0, energy: 1 };
+            duelRoundNumber = 0;
+            spellRepeatState.p1 = {};
+            spellRepeatState.p2 = {};
+            lastActionTypeByPlayer = { p1: 'attack', p2: 'attack' };
+            tempP1Action = null;
+            currentSelectingPlayer = 'p1';
+            selectedActionType = 'attack';
+            cinematicResolving = false;
+
+            ['p1', 'p2'].forEach(key => {
+                document.getElementById(`${key}-hp-text`).innerText = '100';
+                document.getElementById(`${key}-hp-bar`).style.width = '100%';
+            });
+            document.getElementById('combat-log').innerHTML =
+                '<div class="text-amber-400/70">[Sistema] Duelo reiniciado. Que a sorte esteja a vosso favor.</div>';
+            document.getElementById('embate-modal').classList.add('hidden');
+            document.querySelectorAll('#btn-type-atk, #btn-type-def, #active-spell-select').forEach(el => el.disabled = false);
+            const confirmButton = document.querySelector('#action-panel button[onclick="confirmTurnAction()"]');
+            if (confirmButton) confirmButton.disabled = false;
+            prepareTurnInput();
+            document.getElementById('combat-log').scrollTop = 0;
+        }
+
+        function backToMenu() {
+            document.getElementById('embate-modal').classList.add('hidden');
+            document.getElementById('duel-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+            gameState.p1.hp = 100;
+            gameState.p2.hp = 100;
+            gameState.p1Action = null;
+            gameState.p2Action = null;
+            duelRoundNumber = 0;
+            spellRepeatState.p1 = {};
+            spellRepeatState.p2 = {};
+            lastActionTypeByPlayer = { p1: 'attack', p2: 'attack' };
+            tempP1Action = null;
+            currentSelectingPlayer = 'p1';
+            cinematicResolving = false;
+        }
+
         function checkGameOver() {
-            if (gameState.p1.hp <= 0) {
-                alert(`${gameState.p2.name} venceu o duelo!`);
-                location.reload();
-            } else if (gameState.p2.hp <= 0) {
-                alert(`${gameState.p1.name} venceu o duelo!`);
-                location.reload();
-            } else {
-                if (gameState.mode === 'online' && gameState.isHost) {
-                    db.ref('rooms/' + gameState.roomCode).update({ actionP1: null, actionP2: null });
-                }
-                prepareTurnInput();
+            const loserKey = gameState.p1.hp <= 0 ? 'p1' : (gameState.p2.hp <= 0 ? 'p2' : null);
+            if (loserKey) {
+                const winnerKey = loserKey === 'p1' ? 'p2' : 'p1';
+                const winner = gameState[winnerKey];
+                const loser = gameState[loserKey];
+                const act1 = gameState.p1Action;
+                const act2 = gameState.p2Action;
+                const spellLabel = action => {
+                    if (!action || action.type === 'pass' || !action.spell) return 'Nenhum feitiço (passou a vez)';
+                    return `${action.spell.name} — ${action.type === 'attack' ? 'Ataque' : 'Defesa'} nível ${action.spell.level}`;
+                };
+                const usedByWinner = spellLabel(gameState[winnerKey === 'p1' ? 'p1Action' : 'p2Action']);
+                const usedByLoser = spellLabel(gameState[loserKey === 'p1' ? 'p1Action' : 'p2Action']);
+                const conclusion = `<div class="border-2 border-amber-400 rounded-xl p-3 mt-3 mb-2 bg-slate-900/90">
+                    <div class="text-amber-300 font-extrabold text-lg">🏆 FIM DO DUELO — ${winner.name} VENCEU!</div>
+                    <div class="text-rose-300 font-bold mt-1">💔 ${loser.name} foi derrotado (HP: 0).</div>
+                    <div class="mt-2 text-sky-200">✨ Feitiço usado por ${winner.name}: <strong>${usedByWinner}</strong>.</div>
+                    <div class="text-rose-200">🪄 Feitiço usado por ${loser.name}: <strong>${usedByLoser}</strong>.</div>
+                    <div class="duel-result-actions">
+                        <button class="btn-restart-duel" onclick="restartDuel()">↻ Reiniciar duelo</button>
+                        <button class="btn-back-menu" onclick="backToMenu()">⌂ Voltar ao menu</button>
+                    </div>
+                </div>`;
+                const log = document.getElementById('combat-log');
+                log.innerHTML = conclusion + log.innerHTML;
+                document.getElementById('combat-log').scrollTop = 0;
+                document.querySelectorAll('#btn-type-atk, #btn-type-def, #confirm-action-btn, #active-spell-select').forEach(el => el.disabled = true);
+                const status = document.getElementById('turn-status');
+                if (status) status.innerText = `Duelo encerrado: ${winner.name} venceu!`;
+                const roundTitle = document.querySelector('#combat-log');
+                if (roundTitle) roundTitle.setAttribute('aria-label', 'Resultado final do duelo');
+                return;
             }
+            prepareTurnInput();
         }
     </script>
 </body>
