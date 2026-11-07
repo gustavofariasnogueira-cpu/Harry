@@ -192,17 +192,6 @@
             </div>
             <button onclick="confirmTurnAction()" id="btn-confirm-action" class="btn-magic px-10 py-2.5 rounded-lg shadow-lg tracking-wide">Confirmar Jogada (Secreto)</button>
         </div>
-        <div id="embate-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 hidden z-50 backdrop-blur-sm">
-            <div class="config-card p-7 rounded-2xl max-w-md w-full text-center border-amber-400/50">
-                <h3 class="text-2xl font-bold text-amber-400 mb-2 tracking-wide">⚡ EMBATE DE VARINHAS</h3>
-                <p class="text-xs text-amber-200/60 mb-1 tracking-widest uppercase">Priori Incantatem</p>
-                <p id="embate-instructions" class="text-xs text-slate-300 mb-4">Os ataques empataram. Nenhum jogador sofrerá dano por este embate; o duelo continuará.</p>
-                <div class="text-sm text-amber-200 mb-4">Dano deste embate: <span id="embate-energy" class="font-bold text-xl text-amber-300">0</span></div>
-                <div id="embate-host-panel" class="flex flex-col items-center gap-3 mb-4 hidden"></div>
-                <div id="embate-guess-panel" class="flex flex-col items-center gap-3 mb-4 hidden"></div>
-                <div id="embate-status" class="text-xs text-slate-400" aria-live="polite"></div>
-            </div>
-        </div>
         <div id="game-over-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 hidden z-50 backdrop-blur-sm">
             <div class="config-card p-7 rounded-2xl max-w-md w-full text-center border-amber-400/50">
                 <h3 id="game-over-title" class="text-2xl font-bold text-amber-400 mb-2 tracking-wide">🏆 FIM DO DUELO</h3>
@@ -387,13 +376,6 @@
                     document.getElementById('start-btn').disabled = false;
                     document.getElementById('start-btn').innerText = "Entrar no Duelo";
                 }
-                if (gameState.mode === 'online' && data.embate) {
-                    syncEmbateState(data.embate);
-                } else if (gameState.mode === 'online' && gameState.embateState.resultApplied && data.status !== 'finished' && !data.embate) {
-                    gameState.embateState = { active: false, spell: null, number: 0, energy: 1, resultApplied: false };
-                    document.getElementById('embate-modal').classList.add('hidden');
-                    if (!document.getElementById('duel-screen').classList.contains('hidden')) prepareTurnInput();
-                }
                 if (data.status === 'finished' && data.result) {
                     gameState.p1.hp = data.result.loserKey === 'p1' ? 0 : 100;
                     gameState.p2.hp = data.result.loserKey === 'p2' ? 0 : 100;
@@ -404,7 +386,6 @@
                     showGameOver(data.result.winnerName, data.result.loserName);
                 } else if (data.status === 'ready' && data.result === null) {
                     document.getElementById('game-over-modal').classList.add('hidden');
-                    document.getElementById('embate-modal').classList.add('hidden');
                     ['p1', 'p2'].forEach(key => {
                         gameState[key].hp = 100;
                         document.getElementById(`${key}-hp-text`).innerText = '100';
@@ -533,9 +514,6 @@
                     gameState.p2Action = gameState.isHost ? act2 : act1;
                     resolveRoundWithAnimation();
                 }
-                if (gameState.mode === 'online' && data.embate) {
-                    syncEmbateState(data.embate);
-                }
                 if (data.status === 'finished' && data.result) {
                     if (gameState.p1.hp > 0 && gameState.p2.hp > 0) {
                         gameState.p1.hp = data.result.loserKey === 'p1' ? 0 : gameState.p1.hp;
@@ -606,9 +584,9 @@
             narrative += `<div>🧙‍♂️ <strong class="text-rose-300">${p2.name}</strong> conjurou: <span class="text-amber-200">${a2.spell.name}</span></div>`;
             if (a1.type === 'attack' && a2.type === 'attack') {
                 if (a1.spell.level === a2.spell.level) {
-                    narrative += `<div class="text-purple-400 font-bold mt-1.5">⚡ Choque de feitiços de mesmo nível! Priori Incantatem ativado!</div></div>`;
+                    narrative += `<div class="text-purple-400 font-bold mt-1.5">⚡ Choque de feitiços de mesmo nível! Nenhum dano causado. A luta continua!</div></div>`;
                     log.innerHTML = narrative + log.innerHTML;
-                    startEmbate(a1.spell);
+                    startEmbate();
                     return;
                 } else if (a1.spell.level > a2.spell.level) {
                     const dmg = applyDamageDirect('p2', a1.spell.level * 5);
@@ -647,47 +625,9 @@
                 return `<div class="text-amber-400 mt-1.5">⚠️ ${defender.name} tentou se defender com <strong>${defenseSpell.name}</strong> (Nv.${defenseSpell.level}), mas o ataque era mais forte! Dano residual de <strong>${residualDamage}</strong> pontos!</div></div>`;
             }
         }
-        let lastSeenEmbateResultId = null;
-
-        function startEmbate(spell) {
-            const roundId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            gameState.embateState = { active: true, spell, roundId, resultApplied: false };
-            document.getElementById('embate-modal').classList.remove('hidden');
-            document.getElementById('embate-energy').innerText = '0';
-            document.getElementById('embate-status').innerText = 'Os feitiços empataram: ninguém sofre dano. O duelo continuará.';
+        function startEmbate() {
+            document.getElementById('combat-log').innerHTML = '<div class="text-purple-300 font-bold">⚡ Empate: nenhum dano causado. A luta continua!</div>' + document.getElementById('combat-log').innerHTML;
             if (gameState.mode === 'online' && gameState.isHost) {
-                db.ref(`rooms/${gameState.roomCode}/embate`).set({ active: true, roundId, spell: { name: spell.name, level: spell.level } });
-            } else if (gameState.mode !== 'online') {
-                setTimeout(finishEmbate, 1100);
-            }
-        }
-
-        function syncEmbateState(remote) {
-            if (!remote || !remote.roundId) return;
-            const spell = ATTACK_SPELLS.find(item => item.name === remote.spell?.name) || remote.spell;
-            gameState.embateState = {
-                ...gameState.embateState,
-                active: Boolean(remote.active), spell, roundId: remote.roundId,
-                resultApplied: gameState.embateState.resultApplied || false
-            };
-            document.getElementById('embate-modal').classList.remove('hidden');
-            document.getElementById('embate-status').innerText = 'Empate de ataques: ninguém sofreu dano. A rodada vai continuar.';
-            if (gameState.isHost && remote.active) {
-                db.ref(`rooms/${gameState.roomCode}/embate`).update({ active: false });
-            }
-            if (!remote.active) finishEmbate();
-        }
-
-        function finishEmbate() {
-            const state = gameState.embateState;
-            if (state.resultApplied) return;
-            state.resultApplied = true;
-            state.active = false;
-            document.getElementById('embate-modal').classList.add('hidden');
-            document.getElementById('combat-log').innerHTML = '<div class="text-purple-300 font-bold">⚡ Empate no embate: nenhum dano causado. A luta continua!</div>' + document.getElementById('combat-log').innerHTML;
-            if (gameState.mode === 'online' && !gameState.isHost) return;
-            if (gameState.mode === 'online') {
-                db.ref(`rooms/${gameState.roomCode}/embate`).remove();
                 db.ref(`rooms/${gameState.roomCode}`).update({ actionP1: null, actionP2: null });
             }
             prepareTurnInput();
@@ -708,7 +648,7 @@
                 return;
             }
             if (gameState.mode === 'online' && gameState.isHost) {
-                db.ref('rooms/' + gameState.roomCode).update({ actionP1: null, actionP2: null, embate: null, embatePresses: null });
+                db.ref('rooms/' + gameState.roomCode).update({ actionP1: null, actionP2: null });
             }
             prepareTurnInput();
         }
@@ -739,7 +679,6 @@
                 });
                 document.getElementById('combat-log').innerHTML = '<div class="text-amber-400/70">[Sistema] Novo duelo iniciado. Que a sorte esteja a vosso favor.</div>';
                 document.getElementById('game-over-modal').classList.add('hidden');
-                document.getElementById('embate-modal').classList.add('hidden');
                 document.getElementById('btn-confirm-action').disabled = false;
                 document.getElementById('btn-type-atk').disabled = false;
                 document.getElementById('btn-type-def').disabled = false;
@@ -764,12 +703,11 @@
         function backToMenu() {
             if (gameState.mode === 'online') {
                 const roomRef = db.ref('rooms/' + gameState.roomCode);
-                if (gameState.isHost) roomRef.update({ status: 'closed', result: null, embate: null, embatePresses: null, actionP1: null, actionP2: null });
+                if (gameState.isHost) roomRef.update({ status: 'closed', result: null, actionP1: null, actionP2: null });
                 else roomRef.child(gameState.isHost ? 'p1' : 'p2').update({ name: null, house: null, attacks: null, defenses: null });
                 roomRef.off();
             }
             document.getElementById('game-over-modal').classList.add('hidden');
-            document.getElementById('embate-modal').classList.add('hidden');
             document.getElementById('duel-screen').classList.add('hidden');
             document.getElementById('setup-screen').classList.remove('hidden');
         }
