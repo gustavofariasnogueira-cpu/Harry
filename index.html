@@ -82,6 +82,11 @@
         @keyframes arenaShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
         .defense-glow-left { filter: drop-shadow(0 0 25px rgba(92, 225, 255, 1)) !important; }
         .defense-glow-right { filter: drop-shadow(0 0 25px rgba(255, 77, 109, 1)) !important; }
+        .duel-result-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 1rem; }
+        .duel-result-actions button { flex: 1 1 140px; border-radius: 0.65rem; padding: 0.7rem 0.8rem; font-weight: 800; cursor: pointer; transition: transform 0.15s ease, filter 0.15s ease; }
+        .duel-result-actions button:hover { transform: translateY(-2px); filter: brightness(1.12); }
+        .btn-restart-duel { color: #17120a; background: linear-gradient(135deg, #ffe28a, #d5a72e); border: 1px solid #fff0b8; }
+        .btn-back-menu { color: #e8e6d9; background: linear-gradient(135deg, #334155, #111827); border: 1px solid #64748b; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 py-8">
@@ -198,6 +203,17 @@
                     <button onclick="submitEmbateGuess()" class="btn-magic px-5 py-2 rounded-lg font-bold">Enviar Palpite</button>
                 </div>
                 <div id="embate-status" class="text-xs text-slate-400"></div>
+            </div>
+        </div>
+        <div id="game-over-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 hidden z-50 backdrop-blur-sm">
+            <div class="config-card p-7 rounded-2xl max-w-md w-full text-center border-amber-400/50">
+                <h3 id="game-over-title" class="text-2xl font-bold text-amber-400 mb-2 tracking-wide">🏆 FIM DO DUELO</h3>
+                <p id="game-over-winner" class="text-lg font-bold text-sky-300 mb-1"></p>
+                <p id="game-over-loser" class="text-sm text-rose-300 mb-4"></p>
+                <div class="duel-result-actions">
+                    <button class="btn-restart-duel" onclick="restartDuel()">↻ Jogar novamente</button>
+                    <button class="btn-back-menu" onclick="backToMenu()">⌂ Voltar ao menu</button>
+                </div>
             </div>
         </div>
         <div class="p-4 rounded-xl h-52 overflow-y-auto text-xs space-y-2.5" id="combat-log">
@@ -369,6 +385,32 @@
                     document.getElementById('room-status-msg').innerText = `Oponente ${data.p2.name} entrou na sala!`;
                     document.getElementById('start-btn').disabled = false;
                     document.getElementById('start-btn').innerText = "Entrar no Duelo";
+                }
+                if (data.status === 'finished' && data.result) {
+                    gameState.p1.hp = data.result.loserKey === 'p1' ? 0 : 100;
+                    gameState.p2.hp = data.result.loserKey === 'p2' ? 0 : 100;
+                    document.getElementById('p1-hp-text').innerText = gameState.p1.hp;
+                    document.getElementById('p1-hp-bar').style.width = `${gameState.p1.hp}%`;
+                    document.getElementById('p2-hp-text').innerText = gameState.p2.hp;
+                    document.getElementById('p2-hp-bar').style.width = `${gameState.p2.hp}%`;
+                    showGameOver(data.result.winnerName, data.result.loserName);
+                } else if (data.status === 'ready' && data.result === null) {
+                    document.getElementById('game-over-modal').classList.add('hidden');
+                    document.getElementById('embate-modal').classList.add('hidden');
+                    ['p1', 'p2'].forEach(key => {
+                        gameState[key].hp = 100;
+                        document.getElementById(`${key}-hp-text`).innerText = '100';
+                        document.getElementById(`${key}-hp-bar`).style.width = '100%';
+                    });
+                    document.getElementById('btn-confirm-action').disabled = false;
+                    document.getElementById('btn-type-atk').disabled = false;
+                    document.getElementById('btn-type-def').disabled = false;
+                    document.getElementById('active-spell-select').disabled = false;
+                    if (document.getElementById('duel-screen').classList.contains('hidden') === false) prepareTurnInput();
+                } else if (data.status === 'closed') {
+                    document.getElementById('game-over-modal').classList.add('hidden');
+                    document.getElementById('turn-subtitle').innerText = 'O anfitrião encerrou a sala. Você pode voltar ao menu.';
+                    document.getElementById('btn-confirm-action').disabled = true;
                 }
             });
         }
@@ -598,6 +640,10 @@
             const guess = parseInt(document.getElementById('embate-guess').value, 10);
             if (isNaN(guess) || guess < 1 || guess > 5) { alert('Digite um número entre 1 e 5!'); return; }
             const state = gameState.embateState;
+            if (gameState.mode === 'online' && !gameState.isHost) {
+                document.getElementById('embate-status').innerText = 'No modo online, o anfitrião resolve o sorteio e anuncia o resultado.';
+                return;
+            }
             if (guess === state.number) {
                 document.getElementById('embate-modal').classList.add('hidden');
                 state.active = false;
@@ -616,18 +662,85 @@
             }
         }
         function checkGameOver() {
-            if (gameState.p1.hp <= 0) {
-                alert(`${gameState.p2.name} venceu o duelo!`);
-                location.reload();
-            } else if (gameState.p2.hp <= 0) {
-                alert(`${gameState.p1.name} venceu o duelo!`);
-                location.reload();
-            } else {
-                if (gameState.mode === 'online' && gameState.isHost) {
-                    db.ref('rooms/' + gameState.roomCode).update({ actionP1: null, actionP2: null });
+            const loserKey = gameState.p1.hp <= 0 ? 'p1' : (gameState.p2.hp <= 0 ? 'p2' : null);
+            if (loserKey) {
+                const winnerKey = loserKey === 'p1' ? 'p2' : 'p1';
+                const winner = gameState[winnerKey];
+                const loser = gameState[loserKey];
+                if (gameState.mode === 'online') {
+                    const result = { winnerKey, loserKey, winnerName: winner.name, loserName: loser.name, status: 'finished' };
+                    if (gameState.isHost) {
+                        db.ref('rooms/' + gameState.roomCode).update({ result, status: 'finished' });
+                    }
                 }
-                prepareTurnInput();
+                showGameOver(winner.name, loser.name);
+                return;
             }
+            if (gameState.mode === 'online' && gameState.isHost) {
+                db.ref('rooms/' + gameState.roomCode).update({ actionP1: null, actionP2: null });
+            }
+            prepareTurnInput();
+        }
+
+        function showGameOver(winnerName, loserName) {
+            document.getElementById('game-over-winner').innerText = `🏆 ${winnerName} venceu o duelo!`;
+            document.getElementById('game-over-loser').innerText = `${loserName} foi derrotado.`;
+            document.getElementById('game-over-modal').classList.remove('hidden');
+            document.getElementById('btn-confirm-action').disabled = true;
+            document.getElementById('btn-type-atk').disabled = true;
+            document.getElementById('btn-type-def').disabled = true;
+            document.getElementById('active-spell-select').disabled = true;
+        }
+
+        function restartDuel() {
+            const resetState = () => {
+                gameState.p1.hp = 100;
+                gameState.p2.hp = 100;
+                gameState.p1Action = null;
+                gameState.p2Action = null;
+                gameState.embateState = { active: false, spell: null, number: 0, energy: 1 };
+                gameState.p1.lastSpellUsed = gameState.p2.lastSpellUsed = null;
+                gameState.p1.consecutiveCount = gameState.p2.consecutiveCount = 0;
+                gameState.p1.cooldownTurns = gameState.p2.cooldownTurns = 0;
+                ['p1', 'p2'].forEach(key => {
+                    document.getElementById(`${key}-hp-text`).innerText = '100';
+                    document.getElementById(`${key}-hp-bar`).style.width = '100%';
+                });
+                document.getElementById('combat-log').innerHTML = '<div class="text-amber-400/70">[Sistema] Novo duelo iniciado. Que a sorte esteja a vosso favor.</div>';
+                document.getElementById('game-over-modal').classList.add('hidden');
+                document.getElementById('embate-modal').classList.add('hidden');
+                document.getElementById('btn-confirm-action').disabled = false;
+                document.getElementById('btn-type-atk').disabled = false;
+                document.getElementById('btn-type-def').disabled = false;
+                document.getElementById('active-spell-select').disabled = false;
+                prepareTurnInput();
+            };
+            if (gameState.mode === 'online') {
+                if (!gameState.isHost) {
+                    document.getElementById('turn-subtitle').innerText = 'Aguardando o anfitrião reiniciar o duelo...';
+                    document.getElementById('game-over-modal').classList.add('hidden');
+                    return;
+                }
+                db.ref('rooms/' + gameState.roomCode).update({
+                    status: 'ready', result: null, actionP1: null, actionP2: null,
+                    p1: { name: gameState.p1.name, house: gameState.p1.house.id, hp: 100, attacks: gameState.p1.attacks, defenses: gameState.p1.defenses },
+                    p2: { name: gameState.p2.name, house: gameState.p2.house.id, hp: 100, attacks: gameState.p2.attacks, defenses: gameState.p2.defenses }
+                });
+            }
+            resetState();
+        }
+
+        function backToMenu() {
+            if (gameState.mode === 'online') {
+                const roomRef = db.ref('rooms/' + gameState.roomCode);
+                if (gameState.isHost) roomRef.update({ status: 'closed', result: null, actionP1: null, actionP2: null });
+                else roomRef.child(gameState.isHost ? 'p1' : 'p2').update({ name: null, house: null, attacks: null, defenses: null });
+                roomRef.off();
+            }
+            document.getElementById('game-over-modal').classList.add('hidden');
+            document.getElementById('embate-modal').classList.add('hidden');
+            document.getElementById('duel-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
         }
     </script>
 </body>
