@@ -850,25 +850,38 @@
                 gameState.p2.house = HOUSES[1];
                 gameState.p2.attacks = [...gameState.p1.attacks];
                 gameState.p2.defenses = [...gameState.p1.defenses];
+                
+                iniciarTelasDuelo();
             } else {
                 const code = gameState.roomCode;
                 const roomRef = db.ref('rooms/' + code);
                 roomRef.once('value', (snap) => {
                     const data = snap.val();
-                    const oppData = gameState.isHost ? data.p2 : data.p1;
-                    gameState.p2.name = oppData.name;
-                    gameState.p2.house = HOUSES.find(h => h.id === oppData.house);
+                    if (data) {
+                        // Se sou o host, pego os dados do p2. Se sou o p2, pego os dados do p1 (host).
+                        const oppData = gameState.isHost ? data.p2 : data.p1;
+                        gameState.p2.name = oppData && oppData.name ? oppData.name : "Adversário";
+                        gameState.p2.house = oppData && oppData.house ? HOUSES.find(h => h.id === oppData.house) : HOUSES[0];
+                    } else {
+                        gameState.p2.name = "Adversário";
+                        gameState.p2.house = HOUSES[0];
+                    }
                     gameState.p2.attacks = [...gameState.p1.attacks];
                     gameState.p2.defenses = [...gameState.p1.defenses];
+
+                    iniciarTelasDuelo();
                 });
             }
+        }
 
+        function iniciarTelasDuelo() {
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('duel-screen').classList.remove('hidden');
 
             document.getElementById('p1-name-display').innerText = gameState.p1.name;
             document.getElementById('arena-p1-name').innerText = gameState.p1.name;
             document.getElementById('p1-house-display').innerText = gameState.p1.house.name;
+
             document.getElementById('p2-name-display').innerText = gameState.p2.name;
             document.getElementById('arena-p2-name').innerText = gameState.p2.name;
             document.getElementById('p2-house-display').innerText = gameState.p2.house ? gameState.p2.house.name : 'Casa';
