@@ -532,16 +532,26 @@
         }
         function waitForBothActions() {
             const roomRef = db.ref('rooms/' + gameState.roomCode);
+            roomRef.off('value');
             roomRef.on('value', (snap) => {
                 const data = snap.val();
                 if (!data) return;
                 const act1 = data.actionP1;
                 const act2 = data.actionP2;
-                if (act1 && act2) {
-                    roomRef.off('value');
+                if (act1 && act2 && !gameState.p1Action && !gameState.p2Action) {
                     gameState.p1Action = gameState.isHost ? act1 : act2;
                     gameState.p2Action = gameState.isHost ? act2 : act1;
                     resolveRoundWithAnimation();
+                }
+                if (gameState.mode === 'online' && data.embate) {
+                    syncEmbateState(data.embate);
+                }
+                if (data.status === 'finished' && data.result) {
+                    if (gameState.p1.hp > 0 && gameState.p2.hp > 0) {
+                        gameState.p1.hp = data.result.loserKey === 'p1' ? 0 : gameState.p1.hp;
+                        gameState.p2.hp = data.result.loserKey === 'p2' ? 0 : gameState.p2.hp;
+                    }
+                    showGameOver(data.result.winnerName, data.result.loserName);
                 }
             });
         }
