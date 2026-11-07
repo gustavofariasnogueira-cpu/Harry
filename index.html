@@ -790,6 +790,14 @@
 
             document.getElementById('room-status-msg').innerText = `Sala criada! Código: ${code}. Aguardando oponente entrar...`;
             listenToRoom(code);
+           // Dentro de listenToRoom, adicione monitoramento para fechar o modal de embate se o oponente acertar:
+        db.ref('rooms/' + code + '/embateResolved').on('value', (snap) => {
+            if (snap.val() === true) {
+                document.getElementById('embate-modal').classList.add('hidden');
+                gameState.embateState.active = false;
+            }
+        });
+            
         }
 
         function joinRoom() {
