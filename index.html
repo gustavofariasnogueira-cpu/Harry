@@ -1142,59 +1142,60 @@
         }
 
         function startEmbate(spell) {
-            gameState.embateState = { active: true, spell: spell, number: Math.floor(Math.random() * 5) + 1, energy: 1 };
+            gameState.embateState = { 
+                active: true, 
+                spell: spell, 
+                number: Math.floor(Math.random() * 5) + 1, 
+                energy: 1 
+            };
             document.getElementById('embate-modal').classList.remove('hidden');
             document.getElementById('embate-energy').innerText = '1x';
             document.getElementById('embate-guess').value = '';
-            document.getElementById('embate-status').innerText = "Choque de varinhas! Digite um número de 1 a 5.";
+            document.getElementById('embate-status').innerText = "⚡ Choque de varinhas! Digite um número de 1 a 5 e envie.";
+            document.getElementById('embate-guess').disabled = false;
         }
 
         function submitEmbateGuess() {
-            const guess = parseInt(document.getElementById('embate-guess').value, 10);
+            const guessInput = document.getElementById('embate-guess');
+            const guess = parseInt(guessInput.value, 10);
+            
             if (isNaN(guess) || guess < 1 || guess > 5) {
-                alert('Digite um número entre 1 e 5!');
+                alert('Digite um número válido entre 1 e 5!');
                 return;
             }
 
             const state = gameState.embateState;
-            
-            if (gameState.mode === 'online') {
-                // No modo online, enviamos o palpite para o Firebase para sincronizar os dois jogadores
-                const guessData = {
-                    player: gameState.isHost ? 'p1' : 'p2',
-                    guess: guess,
-                    timestamp: Date.now()
-                };
-                db.ref('rooms/' + gameState.roomCode + '/embateGuess').set(guessData);
-                document.getElementById('embate-guess').value = '';
-                document.getElementById('embate-status').innerText = "Palpite enviado! Aguardando resultado do feixe...";
-            } else {
-                // Modo PVE (Contra a IA) local
-                evaluateEmbateLocal(guess);
-            }
-        }
+            if (!state.active) return;
 
-        // Função que avalia o palpite e sincroniza o encerramento do embate
-        function evaluateEmbateLocal(guess) {
-            const state = gameState.embateState;
+            // Verifica se o palpite acertou o número secreto sorteado
             if (guess === state.number) {
+                // ACERTOU! Fecha o modal para todos e aplica o dano refletido multiplicado
                 document.getElementById('embate-modal').classList.add('hidden');
                 state.active = false;
+                
                 const loser = gameState.isHost ? 'p2' : 'p1';
                 const totalDmg = state.spell.level * 8 * state.energy;
                 
                 applyDamageDirect(loser, totalDmg);
-                document.getElementById('combat-log').innerHTML = `<div class="text-purple-400 font-bold">⚡ Priori Incantatem vencido! Refletiu ${totalDmg} de dano!</div>` + document.getElementById('combat-log').innerHTML;
+                document.getElementById('combat-log').innerHTML = `<div class="text-purple-400 font-bold">⚡ Priori Incantatem vencido! Acertou o número secreto ${state.number} e refletiu <strong class="text-amber-300">${totalDmg}</strong> de dano!</div>` + document.getElementById('combat-log').innerHTML;
                 
-                if (gameState.mode === 'online' && gameState.isHost) {
-                    db.ref('rooms/' + gameState.roomCode).update({ embateResolved: true, winner: gameState.isHost ? 'p1' : 'p2', damage: totalDmg });
+                // Se estiver online, avisa o Firebase para fechar a tela do oponente também
+                if (gameState.mode === 'online') {
+                    db.ref('rooms/' + gameState.roomCode).update({ 
+                        embateResolved: true, 
+                        loserKey: loser, 
+                        damage: totalDmg 
+                    });
                 }
+                
                 checkGameOver();
             } else {
+                // ERROU! Acumula a energia e sorteia um novo número
                 state.energy++;
                 state.number = Math.floor(Math.random() * 5) + 1;
                 document.getElementById('embate-energy').innerText = `${state.energy}x`;
-                document.getElementById('embate-status').innerText = `Errou! O número era diferente. Energia subiu para ${state.energy}x. Tente outro número.`;
+                guessInput.value = '';
+                document.getElementById('embate-status').innerText = `❌ Errou! O número era outro. A energia acumulada subiu para ${state.energy}x! Tente novamente.`;
             }
         }
 
