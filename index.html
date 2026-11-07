@@ -464,6 +464,7 @@
         function prepareTurnInput() {
             gameState.p1Action = null;
             gameState.p2Action = null;
+            awaitingNextOnlineRound = false;
             document.getElementById('current-player-turn').innerText = "Fase de Ação Secreta";
             document.getElementById('turn-subtitle').innerText = "Escolha sua magia e confirme em segredo";
             document.getElementById('btn-confirm-action').disabled = false;
@@ -501,10 +502,13 @@
             // PVP local: simplificado - usa input do p2 se existir, senão aleatório
             return getComputerAction();
         }
+        let onlineRoundListener = null;
+        let awaitingNextOnlineRound = false;
+
         function waitForBothActions() {
             const roomRef = db.ref('rooms/' + gameState.roomCode);
-            roomRef.off('value');
-            roomRef.on('value', (snap) => {
+            if (onlineRoundListener) roomRef.off('value', onlineRoundListener);
+            onlineRoundListener = snap => {
                 const data = snap.val();
                 if (!data) return;
                 const act1 = data.actionP1;
@@ -513,15 +517,15 @@
                     gameState.p1Action = gameState.isHost ? act1 : act2;
                     gameState.p2Action = gameState.isHost ? act2 : act1;
                     resolveRoundWithAnimation();
+                } else if (awaitingNextOnlineRound && !act1 && !act2) {
+                    awaitingNextOnlineRound = false;
+                    prepareTurnInput();
                 }
                 if (data.status === 'finished' && data.result) {
-                    if (gameState.p1.hp > 0 && gameState.p2.hp > 0) {
-                        gameState.p1.hp = data.result.loserKey === 'p1' ? 0 : gameState.p1.hp;
-                        gameState.p2.hp = data.result.loserKey === 'p2' ? 0 : gameState.p2.hp;
-                    }
                     showGameOver(data.result.winnerName, data.result.loserName);
                 }
-            });
+            };
+            roomRef.on('value', onlineRoundListener);
         }
         function getComputerAction() {
             const isAttack = Math.random() > 0.4;
@@ -627,8 +631,12 @@
         }
         function startEmbate() {
             document.getElementById('combat-log').innerHTML = '<div class="text-purple-300 font-bold">⚡ Empate: nenhum dano causado. A luta continua!</div>' + document.getElementById('combat-log').innerHTML;
-            if (gameState.mode === 'online' && gameState.isHost) {
-                db.ref(`rooms/${gameState.roomCode}`).update({ actionP1: null, actionP2: null });
+            if (gameState.mode === 'online') {
+                awaitingNextOnlineRound = true;
+                document.getElementById('btn-confirm-action').disabled = true;
+                document.getElementById('turn-subtitle').innerText = 'Sincronizando a próxima rodada...';
+                if (gameState.isHost) db.ref(`rooms/${gameState.roomCode}`).update({ actionP1: null, actionP2: null });
+                return;
             }
             prepareTurnInput();
         }
@@ -647,8 +655,17 @@
                 showGameOver(winner.name, loser.name);
                 return;
             }
-            if (gameState.mode === 'online' && gameState.isHost) {
-                db.ref('rooms/' + gameState.roomCode).update({ actionP1: null, actionP2: null });
+            if (gameState.mode === 'online') {
+                if (gameState.isHost) {
+                    awaitingNextOnlineRound = false;
+                    db.ref('rooms/' + gameState.roomCode).update({ actionP1: null, actionP2: null });
+                    prepareTurnInput();
+                } else {
+                    awaitingNextOnlineRound = true;
+                    document.getElementById('btn-confirm-action').disabled = true;
+                    document.getElementById('turn-subtitle').innerText = 'Aguardando a próxima rodada...';
+                }
+                return;
             }
             prepareTurnInput();
         }
