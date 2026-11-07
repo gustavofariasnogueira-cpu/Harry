@@ -679,6 +679,7 @@
             p2Action: null,
             embateState: { active: false, spell: null, number: 0, energy: 1 }
         };
+
         window.addEventListener('DOMContentLoaded', () => {
             populateHouses();
             populateGrimoires();
@@ -830,11 +831,6 @@
                     document.getElementById('start-btn').disabled = false;
                     document.getElementById('start-btn').innerText = "Entrar no Duelo";
                 }
-
-                // Sincronização de ações e turnos online...
-                if (data.turnResolved) {
-                    applyRemoteRound(data);
-                }
             });
         }
 
@@ -928,7 +924,7 @@
             const spellList = selectedActionType === 'attack' ? gameState.p1.attacks : gameState.p1.defenses;
             const spell = spellList[realIdx];
 
-            // Verifica se o jogador está em cooldown para este feitiço especial (ex: Estátua ou Avada)
+            // Validação da regra de Cooldown por uso consecutivo de feitiços especiais (Estátua ou Avada Kedavra)
             if (gameState.p1.cooldownTurns > 0 && (spell.isStatue || spell.name === "Avada Kedavra")) {
                 alert(`Este feitiço poderoso está em exaustão! Aguarde mais ${gameState.p1.cooldownTurns} rodada(s) para reutilizá-lo.`);
                 return;
@@ -963,7 +959,7 @@
                 const act2 = data.actionP2;
 
                 if (act1 && act2) {
-                    roomRef.off('value'); // Para de escutar temporariamente
+                    roomRef.off('value');
                     gameState.p1Action = gameState.isHost ? act1 : act2;
                     gameState.p2Action = gameState.isHost ? act2 : act1;
                     resolveRoundWithAnimation();
@@ -975,12 +971,10 @@
             const isAttack = Math.random() > 0.4;
             if (isAttack) {
                 const randIdx = Math.floor(Math.random() * gameState.p2.attacks.length);
-                const sp = gameState.p2.attacks[randIdx];
-                return { type: 'attack', spellIndex: randIdx, spellName: sp.name, level: sp.level, isCurse: sp.isCurse || false };
+                return { type: 'attack', spell: gameState.p2.attacks[randIdx] };
             } else {
                 const randIdx = Math.floor(Math.random() * gameState.p2.defenses.length);
-                const sp = gameState.p2.defenses[randIdx];
-                return { type: 'defense', spellIndex: randIdx, spellName: sp.name, level: sp.level, isStatue: sp.isStatue || false };
+                return { type: 'defense', spell: gameState.p2.defenses[randIdx] };
             }
         }
 
@@ -1057,19 +1051,16 @@
             const a2 = gameState.p2Action;
             const log = document.getElementById('combat-log');
 
-            const name1 = a1.spell ? a1.spell.name : (a1.spellName || '');
-            const name2 = a2.spell ? a2.spell.name : (a2.spellName || '');
-
-            const isStatueA1 = a1.spell ? a1.spell.isStatue : (a1.isStatue || false);
-            if (isStatueA1 || name1 === "Avada Kedavra") {
-                if (p1.lastSpellUsed === name1) {
+            // Gerenciamento de cooldown e uso consecutivo do Jogador 1
+            if (a1.spell.isStatue || a1.spell.name === "Avada Kedavra") {
+                if (p1.lastSpellUsed === a1.spell.name) {
                     p1.consecutiveCount++;
                     if (p1.consecutiveCount >= 2) {
-                        p1.cooldownTurns = 2;
+                        p1.cooldownTurns = 2; // Entra em exaustão por 2 rodadas após o 2º uso consecutivo
                         p1.consecutiveCount = 0;
                     }
                 } else {
-                    p1.lastSpellUsed = name1;
+                    p1.lastSpellUsed = a1.spell.name;
                     p1.consecutiveCount = 1;
                 }
             } else {
@@ -1078,63 +1069,26 @@
             if (p1.cooldownTurns > 0) p1.cooldownTurns--;
 
             let narrative = `<div class="border-b border-amber-900/30 pb-2.5 mb-2.5"><div class="text-amber-300 font-bold mb-1.5 tracking-wide">── Resolução da Rodada ──</div>`;
-            narrative += `<div>🧙‍♂️ <strong class="text-sky-300">${p1.name}</strong> conjurou: <span class="text-amber-200">${name1}</span></div>`;
-            narrative += `<div>🧙‍♂️ <strong class="text-rose-300">${p2.name}</strong> conjurou: <span class="text-amber-200">${name2}</span></div>`;
+            narrative += `<div>🧙‍♂️ <strong class="text-sky-300">${p1.name}</strong> conjurou: <span class="text-amber-200">${a1.spell.name}</span></div>`;
+            narrative += `<div>🧙‍♂️ <strong class="text-rose-300">${p2.name}</strong> conjurou: <span class="text-amber-200">${a2.spell.name}</span></div>`;
 
             if (a1.type === 'attack' && a2.type === 'attack') {
-                const lvl1 = a1.spell ? a1.spell.level : a1.level;
-                const lvl2 = a2.spell ? a2.spell.level : a2.level;
-
-                if (lvl1 === lvl2) {
+                if (a1.spell.level === a2.spell.level) {
                     narrative += `<div class="text-purple-400 font-bold mt-1.5">⚡ Choque de feitiços de mesmo nível! Priori Incantatem ativado!</div></div>`;
                     log.innerHTML = narrative + log.innerHTML;
-                    startEmbate(a1.spell || a1);
+                    startEmbate(a1.spell);
                     return;
-                } else if (lvl1 > lvl2) {
-                    const dmg = applyDamageDirect('p2', lvl1 * 5);
+                } else if (a1.spell.level > a2.spell.level) {
+                    const dmg = applyDamageDirect('p2', a1.spell.level * 5);
                     narrative += `<div class="text-sky-400 mt-1.5">⚔️ O ataque de ${p1.name} superou o de ${p2.name}, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
                 } else {
-                    const dmg = applyDamageDirect('p1', lvl2 * 5);
+                    const dmg = applyDamageDirect('p1', a2.spell.level * 5);
                     narrative += `<div class="text-rose-400 mt-1.5">⚔️ O ataque de ${p2.name} superou o de ${p1.name}, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
                 }
             } else if (a1.type === 'attack' && a2.type === 'defense') {
-                const atkSpell = a1.spell || a1;
-                const defSpell = a2.spell || a2;
-                narrative += resolveDetailedAttackDefense(p1, p2, atkSpell, defSpell, 'p2');
+                narrative += resolveDetailedAttackDefense(p1, p2, a1.spell, a2.spell, 'p2');
             } else if (a1.type === 'defense' && a2.type === 'attack') {
-                const defSpell = a1.spell || a1;
-                const atkSpell = a2.spell || a2;
-                narrative += resolveDetailedAttackDefense(p2, p1, atkSpell, defSpell, 'p1');
-            } else {
-                narrative += `<div class="text-slate-400 mt-1.5">🛡️ Ambos adotaram posturas defensivas.</div></div>`;
-            }
-
-            log.innerHTML = narrative + log.innerHTML;
-            checkGameOver();
-        }
-            // ─────────────────────────────────────────────────────────────
-
-            let narrative = `<div class="border-b border-amber-900/30 pb-2.5 mb-2.5"><div class="text-amber-300 font-bold mb-1.5 tracking-wide">── Resolução da Rodada ──</div>`;
-            narrative += `<div>🧙‍♂️ <strong class="text-sky-300">${p1.name}</strong> conjurou: <span class="text-amber-200">${spellNameA1}</span></div>`;
-            narrative += `<div>🧙‍♂️ <strong class="text-rose-300">${p2.name}</strong> conjurou: <span class="text-amber-200">${a2.spellName}</span></div>`;
-
-            if (a1.type === 'attack' && a2.type === 'attack') {
-                if (a1.level === a2.level) {
-                    narrative += `<div class="text-purple-400 font-bold mt-1.5">⚡ Choque de feitiços de mesmo nível! Priori Incantatem ativado!</div></div>`;
-                    log.innerHTML = narrative + log.innerHTML;
-                    startEmbate(a1);
-                    return;
-                } else if (a1.level > a2.level) {
-                    const dmg = applyDamage('p2', a1.level);
-                    narrative += `<div class="text-sky-400 mt-1.5">⚔️ O ataque de ${p1.name} superou o de ${p2.name}, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
-                } else {
-                    const dmg = applyDamage('p1', a2.level);
-                    narrative += `<div class="text-rose-400 mt-1.5">⚔️ O ataque de ${p2.name} superou o de ${p1.name}, causando <strong class="text-amber-300">${dmg}</strong> de dano!</div></div>`;
-                }
-            } else if (a1.type === 'attack' && a2.type === 'defense') {
-                narrative += resolveDetailedAttackDefense(p1, p2, a1, a2, 'p2');
-            } else if (a1.type === 'defense' && a2.type === 'attack') {
-                narrative += resolveDetailedAttackDefense(p2, p1, a2, a1, 'p1');
+                narrative += resolveDetailedAttackDefense(p2, p1, a2.spell, a1.spell, 'p1');
             } else {
                 narrative += `<div class="text-slate-400 mt-1.5">🛡️ Ambos adotaram posturas defensivas.</div></div>`;
             }
@@ -1143,24 +1097,26 @@
             checkGameOver();
         }
 
-        function applyDamage(targetKey, level) {
-            const damage = level * 5;
+        function applyDamageDirect(targetKey, damage) {
             gameState[targetKey].hp = Math.max(0, gameState[targetKey].hp - damage);
             document.getElementById(`${targetKey}-hp-text`).innerText = gameState[targetKey].hp;
             document.getElementById(`${targetKey}-hp-bar`).style.width = `${gameState[targetKey].hp}%`;
             return damage;
         }
 
-        function resolveDetailedAttackDefense(attacker, defender, atk, def, defenderKey) {
-            if (def.isStatue || def.level >= atk.level) {
-                return `<div class="text-sky-300 mt-1.5">🛡️ ${defender.name} usou <strong>${def.spellName}</strong> e bloqueou totalmente o ataque de ${attacker.name}!</div></div>`;
+        function resolveDetailedAttackDefense(attacker, defender, attackSpell, defenseSpell, defenderKey) {
+            if (attackSpell.name === "Avada Kedavra" && !defenseSpell.isStatue) {
+                applyDamageDirect(defenderKey, 100);
+                return `<div class="text-red-500 font-bold mt-1.5">💀 ${attacker.name} disparou o <strong>Avada Kedavra</strong>! A defesa ${defenseSpell.name} de ${defender.name} falhou! Morte instantânea!</div></div>`;
+            }
+
+            if (defenseSpell.isStatue || defenseSpell.level >= attackSpell.level) {
+                return `<div class="text-sky-300 mt-1.5">🛡️ ${defender.name} usou <strong>${defenseSpell.name}</strong> (Nv.${defenseSpell.level}) e bloqueou completamente o ataque <strong>${attackSpell.name}</strong> (Nv.${attackSpell.level})! Nenhum dano sofrido.</div></div>`;
             } else {
-                const diff = atk.level - def.level;
+                const diff = attackSpell.level - defenseSpell.level;
                 const residualDamage = diff * 3;
-                gameState[defenderKey].hp = Math.max(0, gameState[defenderKey].hp - residualDamage);
-                document.getElementById(`${defenderKey}-hp-text`).innerText = gameState[defenderKey].hp;
-                document.getElementById(`${defenderKey}-hp-bar`).style.width = `${gameState[defenderKey].hp}%`;
-                return `<div class="text-amber-400 mt-1.5">⚠️ Defesa insuficiente! Dano residual de <strong>${residualDamage}</strong> pontos em ${defender.name}.</div></div>`;
+                applyDamageDirect(defenderKey, residualDamage);
+                return `<div class="text-amber-400 mt-1.5">⚠️ ${defender.name} tentou se defender com <strong>${defenseSpell.name}</strong> (Nv.${defenseSpell.level}), mas o ataque era mais forte! Dano residual de <strong>${residualDamage}</strong> pontos!</div></div>`;
             }
         }
 
@@ -1203,7 +1159,6 @@
                 alert(`${gameState.p2.name} venceu o duelo!`);
                 location.reload();
             } else if (gameState.p2.hp <= 0) {
-                gameState.p1.name;
                 alert(`${gameState.p1.name} venceu o duelo!`);
                 location.reload();
             } else {
