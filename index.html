@@ -196,20 +196,10 @@
             <div class="config-card p-7 rounded-2xl max-w-md w-full text-center border-amber-400/50">
                 <h3 class="text-2xl font-bold text-amber-400 mb-2 tracking-wide">⚡ EMBATE DE VARINHAS</h3>
                 <p class="text-xs text-amber-200/60 mb-1 tracking-widest uppercase">Priori Incantatem</p>
-                <p id="embate-instructions" class="text-xs text-slate-300 mb-4">O anfitrião escolhe 1 ou 2. O adversário tenta adivinhar. Se acertar, o anfitrião sofre o dano; se errar, quem sofre é o adversário.</p>
-                <div class="text-sm text-amber-200 mb-4">Dano em disputa: <span id="embate-energy" class="font-bold text-xl text-amber-300">0</span></div>
-                <div id="embate-host-panel" class="flex flex-col items-center gap-3 mb-4 hidden">
-                    <p class="text-xs text-amber-200/80">Anfitrião: escolha o número secreto</p>
-                    <div class="flex gap-3"><button onclick="hostChooseEmbate(1)" class="btn-ghost px-6 py-2 rounded-lg font-bold">1</button><button onclick="hostChooseEmbate(2)" class="btn-ghost px-6 py-2 rounded-lg font-bold">2</button></div>
-                    <button onclick="hostConfirmEmbate()" class="btn-magic px-6 py-2 rounded-lg font-bold">Confirmar escolha</button>
-                    <p id="embate-host-choice" class="text-xs text-sky-300">Escolha: -</p>
-                </div>
-                <div id="embate-guess-panel" class="flex flex-col items-center gap-3 mb-4 hidden">
-                    <p class="text-xs text-amber-200/80">Adversário: adivinhe 1 ou 2</p>
-                    <div class="flex gap-3"><button onclick="guestChooseEmbate(1)" class="btn-ghost px-6 py-2 rounded-lg font-bold">1</button><button onclick="guestChooseEmbate(2)" class="btn-ghost px-6 py-2 rounded-lg font-bold">2</button></div>
-                    <button onclick="submitEmbateGuess()" class="btn-magic px-6 py-2 rounded-lg font-bold">Enviar palpite</button>
-                    <p id="embate-guest-choice" class="text-xs text-rose-300">Palpite: -</p>
-                </div>
+                <p id="embate-instructions" class="text-xs text-slate-300 mb-4">Os ataques empataram. Nenhum jogador sofrerá dano por este embate; o duelo continuará.</p>
+                <div class="text-sm text-amber-200 mb-4">Dano deste embate: <span id="embate-energy" class="font-bold text-xl text-amber-300">0</span></div>
+                <div id="embate-host-panel" class="flex flex-col items-center gap-3 mb-4 hidden"></div>
+                <div id="embate-guess-panel" class="flex flex-col items-center gap-3 mb-4 hidden"></div>
                 <div id="embate-status" class="text-xs text-slate-400" aria-live="polite"></div>
             </div>
         </div>
@@ -658,175 +648,49 @@
             }
         }
         let lastSeenEmbateResultId = null;
-        let hostEmbateChoice = null;
-        let guestEmbateGuess = null;
 
         function startEmbate(spell) {
             const roundId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            gameState.embateState = { active: true, spell, roundId, hostChoice: null, guess: null, resultId: null, resultApplied: false };
-            hostEmbateChoice = null;
-            guestEmbateGuess = null;
-            lastSeenEmbateResultId = null;
+            gameState.embateState = { active: true, spell, roundId, resultApplied: false };
             document.getElementById('embate-modal').classList.remove('hidden');
-            document.getElementById('embate-energy').innerText = `${spell.level * 8}`;
-            document.getElementById('embate-host-choice').innerText = 'Escolha: -';
-            document.getElementById('embate-guest-choice').innerText = 'Palpite: -';
-            const showHostPanel = gameState.mode !== 'online' || gameState.isHost;
-            document.getElementById('embate-host-panel').classList.toggle('hidden', !showHostPanel);
-            document.getElementById('embate-guess-panel').classList.add('hidden');
-            document.getElementById('embate-status').innerText = gameState.mode === 'online'
-                ? (gameState.isHost ? 'Escolha 1 ou 2 e confirme. O oponente tentará adivinhar.' : 'Aguardando o anfitrião escolher e confirmar.')
-                : 'Escolha 1 ou 2, confirme e o adversário tentará adivinhar.';
-            if (gameState.mode !== 'online') {
-                const autoChoice = Math.floor(Math.random() * 2) + 1;
-                setTimeout(() => {
-                    hostChooseEmbate(autoChoice);
-                    hostConfirmEmbate();
-                    const autoGuess = Math.floor(Math.random() * 2) + 1;
-                    guestChooseEmbate(autoGuess);
-                    setTimeout(() => submitEmbateGuess(), 1500);
-                }, 1200);
-            }
+            document.getElementById('embate-energy').innerText = '0';
+            document.getElementById('embate-status').innerText = 'Os feitiços empataram: ninguém sofre dano. O duelo continuará.';
             if (gameState.mode === 'online' && gameState.isHost) {
-                db.ref(`rooms/${gameState.roomCode}/embate`).set({
-                    active: true, roundId, spell: { name: spell.name, level: spell.level },
-                    hostChoice: null, guess: null, result: null, resultId: null
-                });
+                db.ref(`rooms/${gameState.roomCode}/embate`).set({ active: true, roundId, spell: { name: spell.name, level: spell.level } });
+            } else if (gameState.mode !== 'online') {
+                setTimeout(finishEmbate, 1100);
             }
         }
 
         function syncEmbateState(remote) {
             if (!remote || !remote.roundId) return;
             const spell = ATTACK_SPELLS.find(item => item.name === remote.spell?.name) || remote.spell;
-            const state = gameState.embateState;
-            if (state.roundId !== remote.roundId) {
-                gameState.embateState = { active: Boolean(remote.active), spell, roundId: remote.roundId, hostChoice: remote.hostChoice ?? null, guess: remote.guess ?? null, resultId: remote.resultId || null, resultApplied: false };
-            } else {
-                state.active = Boolean(remote.active);
-                state.hostChoice = remote.hostChoice ?? null;
-                state.guess = remote.guess ?? null;
-                state.resultId = remote.resultId || state.resultId;
-                state.spell = spell;
-            }
-            if (!remote.active && !remote.result) return;
-            document.getElementById('embate-modal').classList.remove('hidden');
-            document.getElementById('embate-energy').innerText = `${spell.level * 8}`;
-            document.getElementById('embate-host-panel').classList.toggle('hidden', !gameState.isHost);
-            document.getElementById('embate-guess-panel').classList.toggle('hidden', gameState.isHost);
-            if (remote.hostChoice !== null && remote.hostChoice !== undefined) {
-                document.getElementById('embate-host-panel').classList.add('hidden');
-                if (!gameState.isHost) document.getElementById('embate-guess-panel').classList.remove('hidden');
-                document.getElementById('embate-status').innerText = 'O anfitrião confirmou a escolha. Agora o oponente pode enviar o palpite.';
-            }
-            if (gameState.isHost && remote.active && remote.hostChoice !== null && remote.guess !== null && remote.guess !== undefined && !remote.result) {
-                const correct = Number(remote.guess) === Number(remote.hostChoice);
-                const loserKey = correct ? 'p1' : 'p2';
-                const winnerKey = loserKey === 'p1' ? 'p2' : 'p1';
-                const damage = spell.level * 8;
-                const message = correct
-                    ? `${gameState.p2.name} acertou! O ataque atingiu ${gameState.p1.name}.`
-                    : `${gameState.p2.name} errou! O ataque atingiu ${gameState.p2.name}.`;
-                db.ref(`rooms/${gameState.roomCode}/embate`).update({
-                    active: false,
-                    resultId: `${remote.roundId}-result`,
-                    result: { winnerKey, loserKey, damage, message }
-                });
-            }
-            if (remote.result && remote.resultId && lastSeenEmbateResultId !== remote.resultId) {
-                lastSeenEmbateResultId = remote.resultId;
-                const localWinnerKey = !gameState.isHost && remote.result.winnerKey
-                    ? (remote.result.winnerKey === 'p1' ? 'p2' : 'p1')
-                    : remote.result.winnerKey;
-                finishEmbate(localWinnerKey, Number(remote.result.damage) || 0, remote.result.message);
-            }
-        }
-
-        function hostChooseEmbate(value) {
-            if (!gameState.embateState.active || (gameState.mode === 'online' && !gameState.isHost)) return;
-            hostEmbateChoice = value;
-            document.getElementById('embate-host-choice').innerText = `Escolha: ${value}`;
-        }
-
-        function hostConfirmEmbate() {
-            if (hostEmbateChoice !== 1 && hostEmbateChoice !== 2) {
-                document.getElementById('embate-status').innerText = 'Escolha 1 ou 2 antes de confirmar.';
-                return;
-            }
-            if (gameState.mode === 'online') {
-                db.ref(`rooms/${gameState.roomCode}/embate`).update({ hostChoice: hostEmbateChoice });
-            } else {
-                gameState.embateState.hostChoice = hostEmbateChoice;
-            }
-            document.getElementById('embate-host-panel').classList.add('hidden');
-            document.getElementById('embate-guess-panel').classList.remove('hidden');
-            document.getElementById('embate-status').innerText = 'Escolha confirmada. O adversário agora pode adivinhar.';
-        }
-
-        function guestChooseEmbate(value) {
-            if (!gameState.embateState.active) return;
-            guestEmbateGuess = value;
-            document.getElementById('embate-guest-choice').innerText = `Palpite: ${value}`;
-        }
-
-        function submitEmbateGuess() {
-            if (guestEmbateGuess !== 1 && guestEmbateGuess !== 2) {
-                document.getElementById('embate-status').innerText = 'Escolha 1 ou 2 antes de enviar.';
-                return;
-            }
-            const resolveGuess = hostChoice => {
-                if (hostChoice !== 1 && hostChoice !== 2) {
-                    document.getElementById('embate-status').innerText = 'Aguardando a escolha confirmada pelo anfitrião.';
-                    return;
-                }
-                const guesserKey = gameState.mode === 'online' ? 'p2' : 'p2';
-                const hit = guestEmbateGuess === hostChoice;
-                const loserKey = hit ? 'p1' : guesserKey;
-                const winnerKey = loserKey === 'p1' ? 'p2' : 'p1';
-                const damage = gameState.embateState.spell.level * 8;
-                const message = hit
-                    ? `${gameState.p2.name} acertou! O ataque atingiu ${gameState.p1.name}.`
-                    : `${gameState.p2.name} errou! O ataque atingiu ${gameState.p2.name}.`;
-                if (gameState.mode === 'online') {
-                    if (!gameState.isHost) return;
-                    const resultId = `${gameState.embateState.roundId}-result`;
-                    db.ref(`rooms/${gameState.roomCode}/embate`).update({
-                        active: false,
-                        guess: guestEmbateGuess,
-                        resultId,
-                        result: { winnerKey, loserKey, damage, message }
-                    });
-                    return;
-                }
-                finishEmbate(winnerKey, damage, message);
+            gameState.embateState = {
+                ...gameState.embateState,
+                active: Boolean(remote.active), spell, roundId: remote.roundId,
+                resultApplied: gameState.embateState.resultApplied || false
             };
-
-            if (gameState.mode === 'online') {
-                if (gameState.isHost) {
-                    document.getElementById('embate-status').innerText = 'O palpite será enviado pelo oponente.';
-                    return;
-                }
-                db.ref(`rooms/${gameState.roomCode}/embate/guess`).set(guestEmbateGuess);
-                document.getElementById('embate-guess-panel').classList.add('hidden');
-                document.getElementById('embate-status').innerText = 'Palpite enviado! Aguardando resultado...';
-                return;
+            document.getElementById('embate-modal').classList.remove('hidden');
+            document.getElementById('embate-status').innerText = 'Empate de ataques: ninguém sofreu dano. A rodada vai continuar.';
+            if (gameState.isHost && remote.active) {
+                db.ref(`rooms/${gameState.roomCode}/embate`).update({ active: false });
             }
-            resolveGuess(gameState.embateState.hostChoice);
+            if (!remote.active) finishEmbate();
         }
 
-        function finishEmbate(winnerKey, totalDmg, message) {
+        function finishEmbate() {
             const state = gameState.embateState;
             if (state.resultApplied) return;
             state.resultApplied = true;
             state.active = false;
             document.getElementById('embate-modal').classList.add('hidden');
-            const loserKey = winnerKey === 'p1' ? 'p2' : 'p1';
-            gameState[loserKey].hp = Math.max(0, gameState[loserKey].hp - totalDmg);
-            document.getElementById(`${loserKey}-hp-text`).innerText = gameState[loserKey].hp;
-            document.getElementById(`${loserKey}-hp-bar`).style.width = `${gameState[loserKey].hp}%`;
-            const resultMessage = message || `⚡ ${gameState[winnerKey].name} venceu o embate e refletiu ${totalDmg} de dano em ${gameState[loserKey].name}!`;
-            document.getElementById('combat-log').innerHTML = `<div class="text-purple-400 font-bold">${resultMessage} Dano: ${totalDmg}.</div>` + document.getElementById('combat-log').innerHTML;
+            document.getElementById('combat-log').innerHTML = '<div class="text-purple-300 font-bold">⚡ Empate no embate: nenhum dano causado. A luta continua!</div>' + document.getElementById('combat-log').innerHTML;
             if (gameState.mode === 'online' && !gameState.isHost) return;
-            checkGameOver();
+            if (gameState.mode === 'online') {
+                db.ref(`rooms/${gameState.roomCode}/embate`).remove();
+                db.ref(`rooms/${gameState.roomCode}`).update({ actionP1: null, actionP2: null });
+            }
+            prepareTurnInput();
         }
         function checkGameOver() {
             const loserKey = gameState.p1.hp <= 0 ? 'p1' : (gameState.p2.hp <= 0 ? 'p2' : null);
