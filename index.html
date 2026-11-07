@@ -1149,21 +1149,44 @@
             }
 
             const state = gameState.embateState;
+            
+            if (gameState.mode === 'online') {
+                // No modo online, enviamos o palpite para o Firebase para sincronizar os dois jogadores
+                const guessData = {
+                    player: gameState.isHost ? 'p1' : 'p2',
+                    guess: guess,
+                    timestamp: Date.now()
+                };
+                db.ref('rooms/' + gameState.roomCode + '/embateGuess').set(guessData);
+                document.getElementById('embate-guess').value = '';
+                document.getElementById('embate-status').innerText = "Palpite enviado! Aguardando resultado do feixe...";
+            } else {
+                // Modo PVE (Contra a IA) local
+                evaluateEmbateLocal(guess);
+            }
+        }
+
+        // Função que avalia o palpite e sincroniza o encerramento do embate
+        function evaluateEmbateLocal(guess) {
+            const state = gameState.embateState;
             if (guess === state.number) {
                 document.getElementById('embate-modal').classList.add('hidden');
                 state.active = false;
                 const loser = gameState.isHost ? 'p2' : 'p1';
                 const totalDmg = state.spell.level * 8 * state.energy;
-                gameState[loser].hp = Math.max(0, gameState[loser].hp - totalDmg);
-                document.getElementById(`${loser}-hp-text`).innerText = gameState[loser].hp;
-                document.getElementById(`${loser}-hp-bar`).style.width = `${gameState[loser].hp}%`;
+                
+                applyDamageDirect(loser, totalDmg);
                 document.getElementById('combat-log').innerHTML = `<div class="text-purple-400 font-bold">⚡ Priori Incantatem vencido! Refletiu ${totalDmg} de dano!</div>` + document.getElementById('combat-log').innerHTML;
+                
+                if (gameState.mode === 'online' && gameState.isHost) {
+                    db.ref('rooms/' + gameState.roomCode).update({ embateResolved: true, winner: gameState.isHost ? 'p1' : 'p2', damage: totalDmg });
+                }
                 checkGameOver();
             } else {
                 state.energy++;
                 state.number = Math.floor(Math.random() * 5) + 1;
                 document.getElementById('embate-energy').innerText = `${state.energy}x`;
-                document.getElementById('embate-status').innerText = `Errou! Energia subiu para ${state.energy}x. Tente outro número.`;
+                document.getElementById('embate-status').innerText = `Errou! O número era diferente. Energia subiu para ${state.energy}x. Tente outro número.`;
             }
         }
 
