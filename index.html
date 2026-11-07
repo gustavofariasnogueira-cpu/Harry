@@ -229,6 +229,7 @@
             p2: { name: "Adversário", house: null, hp: 100, attacks: [], defenses: [], lastSpellUsed: null, consecutiveCount: 0, cooldownTurns: 0 },
             p1Action: null,
             p2Action: null,
+            onlineRoundNumber: 0,
             embateState: { active: false, spell: null, number: 0, energy: 1 }
         };
 
@@ -330,6 +331,7 @@
             const roomRef = db.ref('rooms/' + code);
             roomRef.set({
                 status: 'waiting',
+                round: 0,
                 p1: { name: document.getElementById('p1-name-input').value, house: document.getElementById('p1-house').value, hp: 100, attacks, defenses },
                 p2: { name: null, house: null, hp: 100, attacks: null, defenses: null }
             });
@@ -421,6 +423,7 @@
                 const roomRef = db.ref('rooms/' + code);
                 roomRef.once('value', (snap) => {
                     const data = snap.val();
+                    gameState.onlineRoundNumber = Number(data.round) || 0;
                     const oppData = gameState.isHost ? data.p2 : data.p1;
                     gameState.p2.name = oppData.name;
                     gameState.p2.house = HOUSES.find(h => h.id === oppData.house);
@@ -511,6 +514,11 @@
             onlineRoundListener = snap => {
                 const data = snap.val();
                 if (!data) return;
+                const incomingRound = Number(data.round) || 0;
+                if (incomingRound > gameState.onlineRoundNumber) {
+                    gameState.onlineRoundNumber = incomingRound;
+                    if (awaitingNextOnlineRound) prepareTurnInput();
+                }
                 const act1 = data.actionP1;
                 const act2 = data.actionP2;
                 if (act1 && act2 && !gameState.p1Action && !gameState.p2Action) {
@@ -518,7 +526,6 @@
                     gameState.p2Action = gameState.isHost ? act2 : act1;
                     resolveRoundWithAnimation();
                 } else if (awaitingNextOnlineRound && !act1 && !act2) {
-                    awaitingNextOnlineRound = false;
                     prepareTurnInput();
                 }
                 if (data.status === 'finished' && data.result) {
@@ -629,13 +636,20 @@
                 return `<div class="text-amber-400 mt-1.5">⚠️ ${defender.name} tentou se defender com <strong>${defenseSpell.name}</strong> (Nv.${defenseSpell.level}), mas o ataque era mais forte! Dano residual de <strong>${residualDamage}</strong> pontos!</div></div>`;
             }
         }
+        function advanceOnlineRound() {
+            awaitingNextOnlineRound = true;
+            document.getElementById('btn-confirm-action').disabled = true;
+            document.getElementById('turn-subtitle').innerText = 'Aguardando a próxima rodada...';
+            if (gameState.isHost) {
+                const nextRound = gameState.onlineRoundNumber + 1;
+                db.ref(`rooms/${gameState.roomCode}`).update({ round: nextRound, actionP1: null, actionP2: null });
+            }
+        }
+
         function startEmbate() {
             document.getElementById('combat-log').innerHTML = '<div class="text-purple-300 font-bold">⚡ Empate: nenhum dano causado. A luta continua!</div>' + document.getElementById('combat-log').innerHTML;
             if (gameState.mode === 'online') {
-                awaitingNextOnlineRound = true;
-                document.getElementById('btn-confirm-action').disabled = true;
-                document.getElementById('turn-subtitle').innerText = 'Sincronizando a próxima rodada...';
-                if (gameState.isHost) db.ref(`rooms/${gameState.roomCode}`).update({ actionP1: null, actionP2: null });
+                advanceOnlineRound();
                 return;
             }
             prepareTurnInput();
@@ -657,13 +671,8 @@
             }
             if (gameState.mode === 'online') {
                 if (gameState.isHost) {
-                    awaitingNextOnlineRound = false;
-                    db.ref('rooms/' + gameState.roomCode).update({ actionP1: null, actionP2: null });
-                    prepareTurnInput();
-                } else {
-                    awaitingNextOnlineRound = true;
-                    document.getElementById('btn-confirm-action').disabled = true;
-                    document.getElementById('turn-subtitle').innerText = 'Aguardando a próxima rodada...';
+                    const nextRound = gameState.onlineRoundNumber + 1;
+                    db.ref('rooms/' + gameState.roomCode).update({ round: nextRound, actionP1: null, actionP2: null });
                 }
                 return;
             }
